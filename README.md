@@ -238,17 +238,18 @@ Instead of making users jump between unrelated parts of the application, Trip Mo
 
 Waiting for a cab, waiting at the airport, sitting at a railway station — these are part of the journey too.
 
-UniPool includes a lightweight **Time-Pass** experience with travel-themed games such as:
+UniPool includes a lightweight **Time-Pass** experience with travel-focused challenges such as:
 
-- 🛺 Rickshaw Rush
-- 🧠 Trivia
-- ✈️ Tap-the-Plane
-- 🃏 Memory Match
+- ✨ Daily Challenge
+- 🧠 Travel Trivia
 - 🔤 Word Scramble
+- ✈️ Airport Codes
+- 🔎 Destination Detective
+- 🔐 Travel Reveal
+- 🗺️ Guess the State
+- 🚆 Station Codes
 
-The experience is designed to stay lightweight and playful rather than turning UniPool into a generic gaming platform.
-
-Trivia and word content can be expanded independently, allowing the library to grow over time.
+Optional XP, streaks, recent-round history and a weekly leaderboard add replay value without affecting ride matching, trust or any serious UniPool feature.
 
 ---
 

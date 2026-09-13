@@ -169,7 +169,7 @@ async def mutual_context(other_user_id: str, authorization: Optional[str] = Head
     their_people = set().union(*[_participants(p) for p in their_trips]) if their_trips else set()
     mutual_ids = list((my_people & their_people) - {me["user_id"], other_user_id})[:8]
     mutual_users = await db.users.find({"user_id": {"$in": mutual_ids}}, {"_id": 0, "user_id": 1, "name": 1}).to_list(8) if mutual_ids else []
-    return {"shared_trips": len(shared), "mutual_travellers": mutual_users, "academic": academic}
+    return {"shared_trips": len(shared), "mutual_travellers": mutual_users, "academic": academic, "profile": _public_user(other)}
 
 
 @router.get("/search/global")

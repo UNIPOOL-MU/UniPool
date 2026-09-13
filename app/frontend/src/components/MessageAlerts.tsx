@@ -20,7 +20,7 @@ export default function MessageAlerts() {
         const items = await peopleApi.notifications(100);
         if (!alive) return;
         notificationInbox.publish(items);
-        const incoming = seen ? items.filter(item => item.type === "message" && !item.read_at && !seen!.has(item.id)) : [];
+        const incoming = seen ? items.filter(item => (item.type === "message" || item.type === "chat") && !item.read_at && !seen!.has(item.id)) : [];
         seen = new Set(items.map(item => item.id));
         for (const item of incoming.reverse()) {
           if (item.route?.split("?")[0] === pathname) { await peopleApi.readNotification(item.id); continue; }
@@ -41,7 +41,7 @@ export default function MessageAlerts() {
   }, [user?.user_id, pathname]);
   if (!message) return null;
   return <View style={{ position: "absolute", top: 72, left: 16, right: 16, maxWidth: 480, alignSelf: "center", backgroundColor: colors.card, borderColor: colors.indigo, borderWidth: 1, borderRadius: 16, padding: 14, zIndex: 1000, flexDirection: "row", gap: 12 }}>
-    <Pressable accessibilityLabel="Open new message" onPress={() => { router.push((message.route || "/notifications") as any); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
+    <Pressable accessibilityLabel="Open new message" onPress={() => { const route = (message.metadata?.sender_id || message.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(message.metadata?.sender_id || message.metadata?.sender_user_id)}` : message.route?.startsWith("/chat/") ? message.route : "/messages"; router.push(route as any); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
     <Pressable accessibilityLabel="Dismiss message notification" onPress={() => setMessage(null)} style={{ minWidth: 44, minHeight: 44, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.indigo }}>✕</Text></Pressable>
   </View>;
 }

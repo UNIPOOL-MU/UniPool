@@ -18,6 +18,7 @@ type Note = {
   read_at?: string | null;
   created_at: string;
   source?: "supabase" | "legacy";
+  metadata?: Record<string, any> | null;
 };
 
 type FilterKey = "all" | "trips" | "money" | "social" | "safety" | "games";
@@ -107,6 +108,7 @@ export default function NotificationsScreen() {
         body: note.body,
         category: categoryFor(note.type),
         action_url: note.route || undefined,
+        metadata: note.metadata || null,
         read_at: note.read_at,
         created_at: note.created_at,
         source: "supabase",
@@ -145,7 +147,10 @@ export default function NotificationsScreen() {
         setError(e?.message || "Couldn't mark notification as read.");
       }
     }
-    if (note.action_url) router.push(note.action_url as any);
+    const messageRoute = note.category === "chat"
+      ? ((note.metadata?.sender_id || note.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(note.metadata?.sender_id || note.metadata?.sender_user_id)}` : note.action_url?.startsWith("/chat/") ? note.action_url : "/messages")
+      : note.action_url;
+    if (messageRoute) router.push(messageRoute as any);
   };
 
   const readAll = async () => {

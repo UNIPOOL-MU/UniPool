@@ -156,7 +156,7 @@ async def get_conversations(user: Dict[str, Any]) -> List[Dict[str, Any]]:
             other = user_map.get(other_id, {})
             last = conv["last_message"]
             unread = await db.messages.count_documents({"$and": [_direct_message_filter(), {"from_user_id": other_id, "to_user_id": uid, "read": False}]})
-            conversations.append({"kind": "direct", "other_user_id": other_id, "name": other.get("name", "Unknown"), "picture": other.get("picture"), "last_message": last.get("text", ""), "last_at": last.get("created_at"), "unread": unread, "online": _is_online(other.get("last_seen"))})
+            conversations.append({"kind": "direct", "other_user_id": other_id, "name": other.get("name", "Unknown"), "picture": other.get("picture"), "last_message": last.get("text", ""), "last_message_from_user_id": last.get("from_user_id"), "last_at": last.get("created_at"), "unread": unread, "online": _is_online(other.get("last_seen"))})
     groups = await db.conversations.find({"type": "trip", "member_ids": uid}, {"_id": 0}).sort("updated_at", -1).to_list(100)
     for group in groups:
         last = await db.messages.find_one({"conversation_id": group["conversation_id"]}, {"_id": 0}, sort=[("created_at", -1)])
@@ -168,7 +168,7 @@ async def get_conversations(user: Dict[str, Any]) -> List[Dict[str, Any]]:
             last_text = "Trip chat created — coordinate your ride here."
             last_at = group.get("updated_at") or group.get("created_at")
             unread = 0
-        conversations.append({"kind": "group", "conversation_id": group["conversation_id"], "name": group["name"], "group_name": group["name"], "members_count": len(group.get("member_ids", [])), "last_message": last_text, "last_at": last_at, "unread": unread, "online": False})
+        conversations.append({"kind": "group", "conversation_id": group["conversation_id"], "name": group["name"], "group_name": group["name"], "members_count": len(group.get("member_ids", [])), "last_message": last_text, "last_message_from_user_id": last.get("from_user_id") if last else None, "last_at": last_at, "unread": unread, "online": False})
     conversations.sort(key=lambda c: _ensure_aware(c["last_at"]) if c.get("last_at") else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return conversations
 

@@ -190,7 +190,7 @@ export default function LoginScreen() {
 
         <View style={[styles.heroInner, isWide ? styles.heroInnerWide : styles.heroInnerNarrow, isPhone && styles.heroInnerPhone]}>
           <View style={styles.heroCopy}>
-            <View style={styles.kicker}><Ionicons name="sparkles-outline" size={15} color={COLORS.saffron} /><Text style={styles.kickerText}>BUILT FOR CAMPUS LIFE</Text></View>
+            <View style={styles.kicker}><Ionicons name="git-compare-outline" size={15} color={COLORS.saffron} /><Text style={styles.kickerText}>BUILT FOR CAMPUS LIFE</Text></View>
             <Text style={[styles.heroTitle, !isWide && styles.heroTitleNarrow, isPhone && styles.heroTitlePhone]}>Campus rides, trip coordination and shared money <Text style={styles.heroTitleAccent}>in one place.</Text></Text>
             <Text style={styles.heroBody}>Find compatible rides, coordinate the trip live, settle the final fare, manage shared expenses and keep useful campus connections together.</Text>
 

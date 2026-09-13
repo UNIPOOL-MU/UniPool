@@ -54,7 +54,7 @@ export default function ExperienceDock() {
     <>
       <Pressable accessibilityRole="button" accessibilityLabel="Open UniPool setup and trip tools" onPress={() => { Haptics.selectionAsync(); setOpen(true); }} style={[styles.fab, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.onSurface }]}>
         <LinearGradient colors={isDark ? ["#FFB84D", "#F59E0B"] : ["#FFC14D", "#F28C16"]} style={styles.fabInner}>
-          <Ionicons name={firstRun ? "sparkles" : "options-outline"} size={19} color="#fff" />
+          <Ionicons name={firstRun ? "compass-outline" : "options-outline"} size={19} color="#fff" />
         </LinearGradient>
       </Pressable>
 
@@ -63,7 +63,7 @@ export default function ExperienceDock() {
           <View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.handle} />
             <View style={styles.headerRow}>
-              <View style={[styles.icon, { backgroundColor: colors.cream }]}><Ionicons name="sparkles" size={20} color={colors.onCream} /></View>
+              <View style={[styles.icon, { backgroundColor: colors.cream }]}><Ionicons name="compass-outline" size={20} color={colors.onCream} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.title, { color: colors.onSurface }]}>Make your UniPool better</Text>
                 <Text style={[styles.subtitle, { color: colors.muted }]}>A few quick settings for smoother trips.</Text>

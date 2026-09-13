@@ -14,7 +14,7 @@ import { useTheme } from "@/src/theme_context/ThemeContext";
 import { FONT_DISPLAY, RADIUS, SPACING } from "@/src/theme";
 
 const STATUS = [
-  ["getting_ready", "Getting ready", "sparkles-outline"],
+  ["getting_ready", "Getting ready", "git-compare-outline"],
   ["on_the_way", "On my way", "car-outline"],
   ["at_pickup", "I'm here", "location-outline"],
   ["running_late", "Running late", "time-outline"],

@@ -43,7 +43,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   circle: "wallet-outline",
   people: "people-circle-outline",
   safety: "shield-checkmark-outline",
-  general: "sparkles-outline",
+  general: "information-circle-outline",
 };
 
 function categoryFor(type?: string) {

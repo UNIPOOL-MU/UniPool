@@ -137,7 +137,7 @@ export default function MatchesScreen() {
   );
 
   const header = <View style={styles.headerWrap}>
-    <View style={styles.headingRow}><View style={styles.headingIcon}><Ionicons name="sparkles-outline" size={20} color={colors.indigo} /></View><View style={{ flex: 1 }}><View style={styles.titleRow}><Text style={styles.title}>Matches</Text>{syncing ? <ActivityIndicator size="small" color={colors.indigo} /> : null}</View><Text style={styles.sub}>Ranked by route, time, preferences and trust, with trade-offs shown explicitly.</Text></View></View>
+    <View style={styles.headingRow}><View style={styles.headingIcon}><Ionicons name="git-compare-outline" size={20} color={colors.indigo} /></View><View style={{ flex: 1 }}><View style={styles.titleRow}><Text style={styles.title}>Matches</Text>{syncing ? <ActivityIndicator size="small" color={colors.indigo} /> : null}</View><Text style={styles.sub}>Ranked by route, time, preferences and trust, with trade-offs shown explicitly.</Text></View></View>
     {partialWarning ? <View style={styles.warning}><Ionicons name="information-circle-outline" size={16} color={colors.warning} /><Text style={styles.warningText}>{partialWarning}</Text></View> : null}
 
     {confirmed.length > 0 ? <View style={styles.section}><View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Confirmed journeys</Text><Text style={styles.sectionCount}>{confirmed.length}</Text></View>{confirmed.map((ride) => {
@@ -148,7 +148,7 @@ export default function MatchesScreen() {
     <View style={styles.sectionHeading}><View style={{ flex: 1, minWidth: 0 }}><Text style={styles.sectionTitle}>Recommended for you</Text><Text style={styles.sectionHint}>A high percentage is not a promise. Check the reasons and trade-offs below.</Text></View>{items.length > 0 ? <Text style={styles.sectionCount}>{items.length}</Text> : null}</View>
   </View>;
 
-  if (loading) return <SafeAreaView style={styles.safe} edges={["top"]}><ScrollView contentContainerStyle={styles.loadingContent}><View style={styles.loadingHead}><View style={styles.headingIcon}><Ionicons name="sparkles-outline" size={20} color={colors.indigo} /></View><View><Text style={styles.title}>Finding your best rides</Text><Text style={styles.sub}>Comparing route, timing and trust signals...</Text></View></View><PoolFeedSkeleton count={3} /></ScrollView></SafeAreaView>;
+  if (loading) return <SafeAreaView style={styles.safe} edges={["top"]}><ScrollView contentContainerStyle={styles.loadingContent}><View style={styles.loadingHead}><View style={styles.headingIcon}><Ionicons name="git-compare-outline" size={20} color={colors.indigo} /></View><View><Text style={styles.title}>Finding your best rides</Text><Text style={styles.sub}>Comparing route, timing and trust signals...</Text></View></View><PoolFeedSkeleton count={3} /></ScrollView></SafeAreaView>;
   if (fatalError && !loadedOnce.current) return <SafeAreaView style={styles.safe} edges={["top"]}><View style={styles.errorState}><View style={styles.errorIcon}><Ionicons name="cloud-offline-outline" size={25} color={colors.error} /></View><Text style={styles.emptyTitle}>Matches are unavailable</Text><Text style={styles.emptySub}>{fatalError}</Text><Pressable onPress={() => load(false)} style={styles.primaryAction}><Ionicons name="refresh" size={16} color="#fff" /><Text style={styles.primaryActionText}>Try again</Text></Pressable></View></SafeAreaView>;
 
   return <SafeAreaView style={styles.safe} edges={["top"]}>

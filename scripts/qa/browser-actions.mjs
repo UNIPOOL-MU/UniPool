@@ -19,7 +19,7 @@ await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url
  if(!u.pathname.includes('/api')&&!u.pathname.includes('/functions/v1/'))return route.fulfill({status:200,body:''});
  const pathname=u.pathname.replace(/^.*\/functions\/v1\/[^/]+/,'').replace(/^.*\/api/,'');calls.push({method:req.method(),path:pathname,body:req.postData()});
  let data=[];
- if(/^\/users\/[^/]+\/profile$/.test(pathname)){const id=pathname.split('/')[2];if(id==='qa-missing')return route.fulfill({status:404,json:{detail:'User not found'}});return route.fulfill({status:200,json:{user_id:id,name:id==='qa-user'?user.name:pool.user_name,username:'qa-student',college_verified:true,school_name:'School of Sciences',branch_name:'Computational Mathematics',batch_year:2026}});}
+ if(/^\/profiles\/[^/]+$/.test(pathname)){const id=pathname.split('/')[2];if(id==='qa-missing')return route.fulfill({status:404,json:{detail:'User not found'}});return route.fulfill({status:200,json:{user_id:id,name:id==='qa-user'?user.name:pool.user_name,username:'qa-student',college_verified:true,school_name:'School of Sciences',branch_name:'Computational Mathematics',batch_year:2026}});}
  if(pathname==='/expense-groups/qa-circle')data=detail();
  else if(pathname==='/expense-groups')data=[group];
  else if(pathname==='/expense-groups/qa-circle/expenses/qa-expense'&&req.method()==='DELETE'){expenses=[];data={ok:true};}

@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
+import { peopleApi } from "@/src/api/people";
 import { api } from "@/src/api/client";
 import { feedbackApi, FeedbackSummary } from "@/src/api/feedback";
 import { useTheme } from "@/src/theme_context/ThemeContext";
@@ -31,7 +32,7 @@ export default function TravelNetworkScreen() {
     setProfile(null); setProfileError(null);
     try {
       if (otherUserId) {
-        const [rel, ctx, feedback, person] = await Promise.allSettled([api.userReliability(otherUserId), api.mutualContext(otherUserId), feedbackApi.summary(otherUserId), api.userProfile(otherUserId)]);
+        const [rel, ctx, feedback, person] = await Promise.allSettled([api.userReliability(otherUserId), api.mutualContext(otherUserId), feedbackApi.summary(otherUserId), peopleApi.profile(otherUserId)]);
         setProfile(person.status === "fulfilled" ? person.value : null);
         setProfileError(person.status === "rejected" ? person.reason?.message || "Could not load profile" : null);
         setReliability(rel.status === "fulfilled" ? rel.value : null);

@@ -74,6 +74,7 @@ export type PeopleNotification = {
 };
 
 export const peopleApi = {
+  profile: (userId: string) => peopleRequest(`/profiles/${encodeURIComponent(userId)}`),
   health: async () => {
     const response = await fetch(`${PEOPLE_BASE}/health`, { cache: "no-store" });
     return response.ok ? response.json() : null;

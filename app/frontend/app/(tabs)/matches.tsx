@@ -1,3 +1,4 @@
+import { sharedApi } from "@/src/api/shared";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Alert } from "@/src/utils/alert";
@@ -96,7 +97,7 @@ export default function MatchesScreen() {
 
   const openTripChat = useCallback(async (pool: { pool_id: string; conversation_id?: string }, fallbackUserId?: string, fallbackName?: string) => {
     try {
-      const chat = pool.conversation_id ? { conversation_id: pool.conversation_id } : await api.ensureTripChat(pool.pool_id);
+      const chat = await sharedApi.ensureTripChat(pool.pool_id);
       router.push({ pathname: "/chat/group/[conversationId]", params: { conversationId: chat.conversation_id } });
     } catch {
       if (fallbackUserId) router.push({ pathname: "/chat/[userId]", params: { userId: fallbackUserId, name: fallbackName || "Traveller" } });

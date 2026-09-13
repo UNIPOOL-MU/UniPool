@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import { api, getToken, setToken } from "@/src/api/client";
 import { collegeSignupApi, CollegeSignupChallenge } from "@/src/api/collegeSignup";
 import { authExtrasApi, MicrosoftAuthConfig } from "@/src/api/authExtras";
+import { peopleApi } from "@/src/api/people";
 import { storage } from "@/src/utils/storage";
 
 export type UniUser = {
@@ -23,6 +24,8 @@ export type UniUser = {
   branch_name?: string | null;
   batch_year?: number | null;
   onboarding_completed?: boolean;
+  signup_tour_eligible?: boolean;
+  created_at?: string;
 };
 
 type AuthCtx = {
@@ -89,9 +92,11 @@ function tourKey(userId: string) {
 }
 
 async function applyLocalTourState(next: UniUser): Promise<UniUser> {
-  if (next.onboarding_completed !== false) return next;
   const localDone = await storage.secureGet(tourKey(next.user_id), null);
-  return localDone === "1" ? { ...next, onboarding_completed: true } : next;
+  if (localDone === "1") return { ...next, onboarding_completed: true };
+  try { if ((await peopleApi.tourStatus()).completed) return { ...next, onboarding_completed: true }; } catch {}
+  const eligible = await storage.secureGet(`${tourKey(next.user_id)}.eligible`, null);
+  return { ...next, signup_tour_eligible: next.signup_tour_eligible || eligible === "1" };
 }
 
 async function cacheUser(next: UniUser | null) {
@@ -164,6 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const applySession = useCallback(async (sessionToken: string, nextUser: UniUser) => {
     await setToken(sessionToken);
+    if (nextUser.signup_tour_eligible || (nextUser.onboarding_completed === false && nextUser.created_at && Date.now() - new Date(nextUser.created_at).getTime() >= 0 && Date.now() - new Date(nextUser.created_at).getTime() < 120000)) {
+      nextUser = { ...nextUser, signup_tour_eligible: true, onboarding_completed: false };
+      await storage.secureSet(`${tourKey(nextUser.user_id)}.eligible`, "1");
+    }
     const effectiveUser = await applyLocalTourState(nextUser);
     await cacheUser(effectiveUser);
     setUser(effectiveUser);
@@ -397,7 +406,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       storage.secureSet(tourKey(user.user_id), "1"),
     ]);
     try {
-      const refreshed = await authExtrasApi.completeOnboarding();
+      await peopleApi.completeTour();
+      const refreshed = { ...optimistic };
       const effective = await applyLocalTourState(refreshed);
       setUser(effective);
       await cacheUser(effective);
@@ -425,7 +435,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSignInError(null);
     try {
       const res = await api.emailSignup(email, password, name, username, turnstileToken);
-      await applySession(res.session_token, res.user);
+      await applySession(res.session_token, { ...res.user, onboarding_completed: false, signup_tour_eligible: true });
     } catch (e: any) {
       setSignInError(e?.message || "Couldn't create your account. Please try again.");
       throw e;
@@ -452,7 +462,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSignInError(null);
     try {
       const res = await collegeSignupApi.confirm(challengeId, code);
-      await applySession(res.session_token, res.user);
+      await applySession(res.session_token, { ...res.user, onboarding_completed: false, signup_tour_eligible: true });
     } catch (e: any) {
       setSignInError(e?.message || "Couldn't verify that code. Please try again.");
       throw e;

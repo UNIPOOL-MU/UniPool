@@ -42,6 +42,7 @@ await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url
  else if(/^\/pools\/qa-pool\/travelers\/[^/]+$/.test(pathname)&&req.method()==='DELETE'){
   if(failLeave)return route.fulfill({status:500,json:{detail:'QA simulated failure'}});rides=[];data={ok:true};
  }
+ else if(pathname==='/messages/trip/ensure/qa-pool')data={conversation_id:'qa-chat'};
  else if(pathname.includes('/can-rate/'))data={can_rate:true,existing:null};
  else if(pathname.includes('/ratings/user/'))data={average:null,count:0,ratings:[]};
  else if(pathname.includes('/state'))data={pool_id:pool.pool_id,stage:'confirmed',member_count:2};
@@ -69,7 +70,7 @@ try{
  await p.goto(origin+'/safety');await p.getByText('Save contact',{exact:true}).click();await p.getByRole('heading',{name:'Add a contact'}).waitFor();await p.getByRole('button',{name:'OK',exact:true}).click();check('Trusted contact validation feedback');
 
  await p.goto(origin+'/matches');await p.getByLabel('Open trip chat').first().click();await p.waitForURL('**/chat/group/qa-chat');check('Confirmed trip chat navigation');
- const toolbar=[['Open Explore','/plan'],['Open Time-pass games','/games'],['Open settings','/settings'],['Post a trip','/post-request'],['No unread notifications','/notifications']];
+ const toolbar=[['Open Time-pass games','/games'],['Open settings','/settings'],['Post a trip','/post-request'],['1 unread notifications','/notifications']];
  for(const [label,pathname] of toolbar){await p.goto(origin+'/matches');await p.getByLabel(label,{exact:true}).click();await p.waitForURL('**'+pathname);check('Toolbar '+label);}
  await p.goto(origin+'/matches');await p.getByLabel('Search UniPool').click();await p.getByText('RGIA',{exact:true}).click();await p.getByText('Rajiv Gandhi International Airport',{exact:true}).click();await p.waitForURL('**/post-request?*');assert.equal(await p.getByPlaceholder('Campus, airport, station…').inputValue(),'Rajiv Gandhi International Airport');check('Global search place selection populates trip form');
  await p.goto(origin+'/post-request');await p.getByText('Check matches & post',{exact:true}).click();await p.getByRole('heading',{name:'Missing route'}).waitFor();await p.getByRole('button',{name:'OK',exact:true}).click();check('Trip posting required-route validation');

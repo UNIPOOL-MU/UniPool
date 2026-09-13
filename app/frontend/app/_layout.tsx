@@ -16,6 +16,7 @@ import FloatingChatLauncher from "@/src/components/FloatingChatLauncher";
 import PolicyConsentGate from "@/src/components/PolicyConsentGate";
 import CampusUtilityStrip from "@/src/components/CampusUtilityStrip";
 import FirstLoginTour from "@/src/components/FirstLoginTour";
+import MessageAlerts from "@/src/components/MessageAlerts";
 import WebAlertHost from "@/src/components/WebAlertHost";
 import PasswordSetupPrompt from "@/src/components/PasswordSetupPrompt";
 
@@ -101,6 +102,7 @@ function AuthGate() {
       </View>
       {user && !isLanding ? <SiteFooter /> : null}
       {user && !isLanding ? <FloatingChatLauncher /> : null}
+      <MessageAlerts />
       {user ? <FirstLoginTour /> : null}
       {user ? <PasswordSetupPrompt /> : null}
     </View>

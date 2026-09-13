@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { SPACING, RADIUS, FONT } from "@/src/theme";
 import { useTheme } from "@/src/theme_context/ThemeContext";
-import { api } from "@/src/api/client";
+import { sharedApi } from "@/src/api/shared";
 import { useAuth } from "@/src/auth/AuthContext";
 
 type Msg = { message_id: string; from_user_id: string; text: string; created_at: string; read_by?: string[]; pending?: boolean };
@@ -32,7 +32,7 @@ export default function GroupChatThread() {
     if (!conversationId) return;
     if (!silent) setLoading(true);
     try {
-      const result = await api.getGroupThread(conversationId);
+      const result = await sharedApi.getGroupThread(conversationId);
       setName(result.name || "Trip chat"); setMembers(result.members || []); setMsgs(result.messages || []);
       if (!silent) setError(null);
     } catch (e: any) { if (!silent) setError(e?.message || "Couldn't load this trip chat"); }
@@ -52,7 +52,7 @@ export default function GroupChatThread() {
     setSending(true); setText(""); setError(null); setMsgs((prev) => [...prev, optimistic]);
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 40);
     try {
-      const sent = await api.sendGroupMessage(conversationId, value);
+      const sent = await sharedApi.sendGroupMessage(conversationId, value);
       setMsgs((prev) => prev.map((m) => m.message_id === localId ? sent : m));
       setTimeout(() => load(true), 300);
     } catch (e: any) {

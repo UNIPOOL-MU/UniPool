@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
-import { api } from "@/src/api/client";
+import { notificationInbox } from "@/src/notifications/inbox";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 import GlobalSearchPalette from "@/src/components/GlobalSearchPalette";
 
@@ -22,7 +22,7 @@ export default function WebTopBar() {
   const { width } = useWindowDimensions();
   const { colors, isDark, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const unread = useSyncExternalStore(notificationInbox.subscribe, notificationInbox.snapshot, () => 0);
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -34,22 +34,6 @@ export default function WebTopBar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    let alive = true;
-    const refresh = async () => {
-      try {
-        if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-        const data = await api.notifications(true, 1);
-        if (alive) setUnread(Number(data.unread || 0));
-      } catch { if (alive) setUnread(0); }
-    };
-    refresh();
-    const timer = setInterval(refresh, 30000);
-    const visible = () => refresh();
-    if (typeof document !== "undefined") document.addEventListener("visibilitychange", visible);
-    return () => { alive = false; clearInterval(timer); if (typeof document !== "undefined") document.removeEventListener("visibilitychange", visible); };
-  }, [pathname]);
 
   if (Platform.OS !== "web") return null;
   const desktop = width >= 1260;
@@ -73,7 +57,6 @@ export default function WebTopBar() {
         <Pressable onPress={() => tap(() => setSearchOpen(true))} style={({ pressed }) => [styles.searchAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel="Search UniPool"><Ionicons name="search" size={19} color={colors.indigo} />{showActionText ? <Text style={[styles.actionText, { color: colors.onSurface }]}>Search</Text> : null}</Pressable>
         <Pressable onPress={() => tap(() => router.push("/post-request" as any))} style={({ pressed }) => [styles.primaryAction, { backgroundColor: colors.indigo, borderColor: colors.indigo }, pressed && styles.pressed]} accessibilityLabel="Post a trip"><Ionicons name="add" size={20} color="#fff" />{showActionText ? <Text style={styles.primaryActionText}>Post trip</Text> : null}</Pressable>
         <Pressable onPress={() => tap(() => router.push("/notifications" as any))} style={({ pressed }) => [styles.iconAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel={`${unread || "No"} unread notifications`}><Ionicons name={unread ? "notifications" : "notifications-outline"} size={20} color={unread ? colors.saffron : colors.indigo} />{unread ? <View style={[styles.badge, { backgroundColor: colors.error }]}><Text style={styles.badgeText}>{unread > 9 ? "9+" : unread}</Text></View> : null}</Pressable>
-        <Pressable onPress={() => tap(() => router.push("/(tabs)/plan" as any))} style={({ pressed }) => [styles.iconAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel="Open Explore"><Ionicons name="compass-outline" size={20} color={pathname === "/plan" ? colors.saffron : colors.indigo} /></Pressable>
         <Pressable onPress={() => tap(() => router.push("/(tabs)/games" as any))} style={({ pressed }) => [styles.iconAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel="Open Time-pass games"><Ionicons name="game-controller-outline" size={20} color={pathname === "/games" ? colors.saffron : colors.indigo} /></Pressable>
         <Pressable onPress={() => tap(() => router.push("/settings" as any))} style={({ pressed }) => [styles.iconAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel="Open settings"><Ionicons name="settings-outline" size={20} color={colors.indigo} /></Pressable>
         <Pressable onPress={() => tap(toggleTheme)} style={({ pressed }) => [styles.iconAction, { backgroundColor: colors.surface2, borderColor: colors.border }, pressed && styles.pressed]} accessibilityLabel={isDark ? "Switch to light theme" : "Switch to dark theme"}><Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={20} color={colors.indigo} /></Pressable>

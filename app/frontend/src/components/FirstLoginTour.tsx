@@ -39,9 +39,9 @@ export default function FirstLoginTour() {
   const [step, setStep] = useState(0);
   const [closing, setClosing] = useState(false);
 
-  // Older accounts created before onboarding was introduced may not have the
-  // field at all. Anything except an explicit true means the tour is still due.
-  const visible = Boolean(user) && user?.onboarding_completed !== true;
+  // Only new accounts explicitly marked unfinished are eligible. Legacy
+  // responses without this field must not restart a completed tour.
+  const visible = Boolean(user) && user?.signup_tour_eligible === true && user?.onboarding_completed === false;
   const current = STEPS[step];
   const last = step === STEPS.length - 1;
   const progress = useMemo(() => `${step + 1} / ${STEPS.length}`, [step]);

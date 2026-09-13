@@ -74,6 +74,8 @@ export type PeopleNotification = {
 };
 
 export const peopleApi = {
+  tourStatus: () => peopleRequest("/onboarding"),
+  completeTour: () => peopleRequest("/onboarding", { method: "POST" }),
   profile: (userId: string) => peopleRequest(`/profiles/${encodeURIComponent(userId)}`),
   health: async () => {
     const response = await fetch(`${PEOPLE_BASE}/health`, { cache: "no-store" });

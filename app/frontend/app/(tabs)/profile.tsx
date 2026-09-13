@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform, Image } from "react-native";
 import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,7 +75,15 @@ export default function ProfileScreen() {
   const [adminPools, setAdminPools] = useState<Pool[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
+  const [pictureSaving, setPictureSaving] = useState(false);
   const knownBadgeIds = useRef<Set<string> | null>(null);
+  const pictureInput = useRef<any>(null);
+  const choosePicture = async () => {
+    if (Platform.OS !== "web" || pictureSaving) return;
+    const file = pictureInput.current?.files?.[0]; if (!file) return;
+    if (!file.type?.startsWith("image/") || file.size > 2_000_000) { Alert.alert("Choose a smaller image", "Please select an image under 2 MB."); return; }
+    const reader = new FileReader(); reader.onload = async () => { try { setPictureSaving(true); await api.updateProfile({ picture: reader.result }); await refresh(); Alert.alert("Profile picture updated", "Your new picture is now visible across UniPool."); } catch (e: any) { Alert.alert("Couldn't update picture", e?.message || "Try again."); } finally { setPictureSaving(false); } }; reader.readAsDataURL(file);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -219,7 +227,8 @@ export default function ProfileScreen() {
         ListHeaderComponent={
           <>
             <LinearGradient colors={isDark ? [colors.surface2, colors.surface3] : [colors.indigo, "#3949AB"]} style={styles.header}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || "U"}</Text></View>
+              <Pressable accessibilityLabel="Edit profile picture" onPress={() => pictureInput.current?.click()} style={styles.avatar}>{user?.picture ? <Image source={{ uri: user.picture }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || "U"}</Text>}<View style={styles.avatarEdit}><Ionicons name="camera" size={12} color="#fff" /></View></Pressable>
+              {Platform.OS === "web" ? React.createElement("input", { ref: pictureInput, type: "file", accept: "image/*", onChange: choosePicture, style: { display: "none" } }) : null}
               <Text style={styles.name}>{user?.name}</Text>
               <Text style={styles.email}>{user?.email}</Text>
               <View style={styles.myRatingRow} testID="my-rating">
@@ -539,7 +548,7 @@ function Stat({ label, value, styles }: { label: string; value: number; styles: 
 const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   header: { alignItems: "center", paddingVertical: SPACING.xl, borderBottomLeftRadius: 22, borderBottomRightRadius: 22, borderBottomWidth: 1, borderBottomColor: isDark ? colors.border : "rgba(255,255,255,0.18)" },
-  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.cream, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.cream, alignItems: "center", justifyContent: "center", marginBottom: SPACING.md, position: "relative", overflow: "visible" }, avatarImage: { width: 72, height: 72, borderRadius: 36 }, avatarEdit: { position: "absolute", right: -2, bottom: -2, width: 23, height: 23, borderRadius: 12, backgroundColor: colors.saffron, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.indigo },
   avatarText: { color: colors.indigo, fontSize: 28, fontWeight: "800" },
   name: { color: isDark ? colors.onSurface : "#fff", fontSize: FONT.xl, fontWeight: "800", fontFamily: FONT_DISPLAY },
   email: { color: isDark ? colors.onSurface2 : "rgba(255,236,194,0.9)", marginTop: 4 },

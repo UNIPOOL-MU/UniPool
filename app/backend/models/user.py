@@ -20,6 +20,7 @@ class UserOut(BaseModel):
 class UserProfileUpdate(BaseModel):
     """Fields that can be updated in a user profile."""
     gender: Optional[str] = None
+    picture: Optional[str] = Field(default=None, max_length=2_000_000)
     phone: Optional[str] = None
     blood_group: Optional[str] = None
 

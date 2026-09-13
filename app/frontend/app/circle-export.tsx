@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";

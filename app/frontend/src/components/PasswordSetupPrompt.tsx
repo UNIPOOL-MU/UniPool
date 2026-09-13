@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert } from "@/src/utils/alert";
 import { Ionicons } from "@expo/vector-icons";
 
 import { authExtrasApi } from "@/src/api/authExtras";

@@ -24,6 +24,7 @@ def test_frontend_required_api_routes_exist():
         ("GET", "/api/requests/incoming"), ("GET", "/api/requests/mine"),
         ("PATCH", "/api/requests/{request_id}/accept"), ("PATCH", "/api/requests/{request_id}/decline"), ("DELETE", "/api/requests/{request_id}"),
         ("GET", "/api/matches/confirmed"),
+        ("DELETE", "/api/pools/{pool_id}/travelers/{traveler_user_id}"),
         ("POST", "/api/messages"), ("GET", "/api/messages/{other_user_id}"), ("GET", "/api/messages/conversations"),
         ("POST", "/api/messages/typing"), ("GET", "/api/messages/typing/{other_user_id}"), ("GET", "/api/users/{user_id}/presence"),
         ("POST", "/api/messages/trip/ensure/{pool_id}"), ("GET", "/api/messages/group/{conversation_id}"), ("POST", "/api/messages/group/{conversation_id}"),

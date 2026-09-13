@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, Alert, ActivityIndicator, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform } from "react-native";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -156,8 +157,9 @@ export default function ProfileScreen() {
   };
 
   const saveGender = async (g: string) => {
+    const previous = gender;
     setGender(g);
-    try { await api.updateProfile({ gender: g }); Haptics.selectionAsync(); } catch {}
+    try { await api.updateProfile({ gender: g }); await refresh(); Haptics.selectionAsync(); } catch (e: any) { setGender(previous); Alert.alert("Couldn't save gender", e?.message || "Please try again."); }
   };
 
   const remove = async (id: string) => {

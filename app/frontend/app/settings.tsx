@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -36,7 +37,7 @@ export default function SettingsScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const patchPrefs = async (patch: any) => { if (!prefs) return; const previous = prefs; const next = { ...prefs, ...patch, categories: { ...prefs.categories, ...(patch.categories || {}) } }; setPrefs(next); try { setPrefs(await api.updateNotificationPreferences(patch)); Haptics.selectionAsync(); } catch (e: any) { setPrefs(previous); Alert.alert("Couldn't save notification setting", e.message || "Try again"); } };
-  const addPickup = async () => { const latitude = Number(lat), longitude = Number(lng); if (!label.trim() || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return Alert.alert("Check pickup point", "Add a name and valid latitude/longitude."); setSaving(true); try { await api.savePickupPoint({ label: label.trim(), lat: latitude, lng: longitude, notes: notes.trim() || undefined }); setLabel(""); setLat(""); setLng(""); setNotes(""); setShowPickup(false); await load(); } catch (e: any) { Alert.alert("Couldn't save pickup point", e.message || "Try again"); } finally { setSaving(false); } };
+  const addPickup = async () => { const latitude = Number(lat), longitude = Number(lng); if (!label.trim() || !lat.trim() || !lng.trim() || !Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return Alert.alert("Check pickup point", "Add a name and valid latitude/longitude."); setSaving(true); try { await api.savePickupPoint({ label: label.trim(), lat: latitude, lng: longitude, notes: notes.trim() || undefined }); setLabel(""); setLat(""); setLng(""); setNotes(""); setShowPickup(false); await load(); } catch (e: any) { Alert.alert("Couldn't save pickup point", e.message || "Try again"); } finally { setSaving(false); } };
   const removePickup = async (id: string) => { const previous = pickups; setPickups((items) => items.filter((p) => p.pickup_point_id !== id)); try { await api.deletePickupPoint(id); } catch (e: any) { setPickups(previous); Alert.alert("Couldn't remove pickup point", e.message); } };
   const unblock = async (id: string) => { const previous = blocked; setBlocked((items) => items.filter((u) => u.user_id !== id)); try { await api.unblockUser(id); } catch (e: any) { setBlocked(previous); Alert.alert("Couldn't unblock user", e.message); } };
   const unrestrict = async (id: string) => { const previous = restricted; setRestricted((items) => items.filter((u) => u.user_id !== id)); try { await utilityApi.unrestrictUser(id); } catch (e: any) { setRestricted(previous); Alert.alert("Couldn't remove restriction", e.message); } };

@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share as RNShare, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { shareText } from "@/src/utils/share";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -78,9 +80,7 @@ export default function PoolDetailScreen() {
   const share = async () => {
     const url = `${WEB_BASE_URL}/pool/${pool.pool_id}`; const people = [pool.user_name, ...travelers.map((t) => t.name)].join(", ");
     const text = participant ? `UniPool trip\n${pool.from_location} → ${pool.to_location}\n${fmtWhen(pool.travel_datetime)}\nTravellers: ${people}${pool.meeting_point?.label ? `\nMeeting: ${pool.meeting_point.label}` : ""}${pool.meeting_point?.notes ? ` · ${pool.meeting_point.notes}` : ""}\n${url}` : `Join this UniPool ride: ${pool.from_location} → ${pool.to_location} — ${url}`;
-    if (Platform.OS === "web" && typeof navigator !== "undefined" && (navigator as any).share) { try { await (navigator as any).share({ title: "UniPool journey", text, url }); return; } catch {} }
-    if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) { try { await navigator.clipboard.writeText(text); Alert.alert("Trip summary copied", "Share it with someone you trust."); return; } catch {} }
-    try { await RNShare.share({ message: text }); } catch {}
+    await shareText({ title: "UniPool trip", text });
   };
 
   const request = async () => { const previous = pool.my_request_status; const optimistic = available > 0 ? "pending" : "waitlisted"; setPool({ ...pool, my_request_status: optimistic }); setBusy("request"); try { const result = await api.requestToJoin(pool.pool_id); setPool((current) => current ? { ...current, my_request_status: result.status } : current); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e: any) { setPool((current) => current ? { ...current, my_request_status: previous } : current); Alert.alert("Couldn't send request", e.message || "Try again"); } finally { setBusy(null); } };

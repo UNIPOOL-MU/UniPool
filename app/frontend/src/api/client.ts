@@ -61,7 +61,7 @@ async function req(path: string, opts: RequestInit = {}, cacheMs = 0) {
     if (method === "GET" && cacheMs > 0) responseCache.set(cacheKey, { at: Date.now(), data });
     return data;
   })();
-  if (method === "GET" && cacheMs > 0) { inflight.set(cacheKey, run); run.finally(() => inflight.delete(cacheKey)); }
+  if (method === "GET" && cacheMs > 0) { inflight.set(cacheKey, run); run.then(() => inflight.delete(cacheKey), () => inflight.delete(cacheKey)); }
   return run;
 }
 async function mutate(path: string, opts: RequestInit) { const data = await req(path, opts); clearReadCache(); return data; }

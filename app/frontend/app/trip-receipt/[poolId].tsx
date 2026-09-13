@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Platform, Share as RNShare, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Platform, ScrollView } from "react-native";
+import { shareText } from "@/src/utils/share";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -52,13 +54,7 @@ export default function TripReceiptScreen() {
     const names = travelers.length > 0 ? ` with ${travelers.map((t) => t.name.split(" ")[0]).join(", ")}` : "";
     const text = `🚗 UniPool trip: ${pool.from_location} → ${pool.to_location} on ${fmtDate(pool.travel_datetime)}${names}. #UniPool`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (Platform.OS === "web" && typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share({ title: "UniPool trip receipt", text }); return; } catch { /* cancelled */ }
-    }
-    if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) {
-      try { await navigator.clipboard.writeText(text); Alert.alert("Copied!", "Trip summary copied to clipboard."); return; } catch {}
-    }
-    try { await RNShare.share({ message: text }); } catch {}
+    await shareText({ title: "UniPool trip", text });
   };
 
   if (loading || !pool) {

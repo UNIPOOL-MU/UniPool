@@ -40,4 +40,5 @@ jobs:
       - run: bash -n ../../scripts/vercel-ignore.sh
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: node ../../scripts/qa/button-contract.cjs
       - run: npx expo export -p web

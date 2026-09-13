@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { Alert } from "@/src/utils/alert";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 

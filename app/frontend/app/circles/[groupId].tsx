@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { shareText } from "@/src/utils/share";
+import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -48,7 +50,7 @@ export default function CircleDetail() {
 
   const members: Member[] = data?.members || []; const existing = new Set(members.map((m) => m.user_id)); const invite = data?.group?.invite_code || "";
   const isAdmin = Boolean(user?.user_id && data?.group?.admins?.includes(user.user_id));
-  const shareInvite = async () => Share.share({ title: `Join ${data?.group?.name}`, message: `Join my UniPool Circle “${data?.group?.name}”.\nInvite code: ${invite}\n\nOpen UniPool → Circles → Join.` });
+  const shareInvite = async () => shareText({ title: `Join ${data?.group?.name}`, text: `Join my UniPool Circle “${data?.group?.name}”.\nInvite code: ${invite}\n\nOpen UniPool → Circles → Join.` });
 
   const searchPeople = async (value: string) => {
     setSearch(value); const q = value.trim(); if (q.length < 2) { setResults([]); return; }
@@ -72,7 +74,7 @@ export default function CircleDetail() {
       const result = await utilityApi.inviteCircleByEmail(groupId!, email);
       if (result.exists && result.user?.user_id) { await addMember(result.user.user_id); return; }
       const url = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(result.subject)}&body=${encodeURIComponent(result.message)}`;
-      const can = await Linking.canOpenURL(url); if (can) await Linking.openURL(url); else await Share.share({ title: result.subject, message: result.message });
+      const can = await Linking.canOpenURL(url); if (can) await Linking.openURL(url); else await shareText({ title: result.subject, text: result.message });
       Alert.alert("Invite ready", `We've prepared the invite for ${email}. They can join with code ${result.invite_code}.`);
     } catch (e: any) { Alert.alert("Couldn't prepare invite", e.message || "Try again"); } finally { setSaving(false); }
   };
@@ -93,7 +95,7 @@ export default function CircleDetail() {
     catch (e: any) { Alert.alert("Couldn't add expense", e.message); } finally { setSaving(false); }
   };
   const settle = async (from = settleFrom, to = settleTo, amountPaise?: number) => {
-    const paise = amountPaise ?? Math.round(Number(settleAmount) * 100); if (!from || !to || from === to || !paise) return Alert.alert("Check settlement", "Choose two people and an amount."); setSaving(true);
+    const paise = amountPaise ?? Math.round(Number(settleAmount) * 100); if (!from || !to || from === to || !Number.isFinite(paise) || paise <= 0) return Alert.alert("Check settlement", "Choose two people and an amount."); setSaving(true);
     try { await circlesApi.settle(groupId!, { from_user_id: from, to_user_id: to, amount_paise: paise }); setSettleAmount(""); setShowSettle(false); await load(); }
     catch (e: any) { Alert.alert("Couldn't settle", e.message); } finally { setSaving(false); }
   };
@@ -118,7 +120,7 @@ export default function CircleDetail() {
 
     <Section title="Balances" styles={styles}><View style={styles.stack}>{(data.balances || []).map((b: any) => <View key={b.user_id} style={styles.ledgerRow}><View style={styles.circleIcon}><Ionicons name="person-outline" size={17} color={colors.indigo} /></View><Text style={[styles.memberName, { flex: 1 }]}>{b.user_id === user?.user_id ? "You" : b.name}</Text><Text style={[styles.amount, b.amount_paise > 0 && { color: colors.success }, b.amount_paise < 0 && { color: colors.error }]}>{b.amount_paise > 0 ? `+${money(b.amount_paise)}` : b.amount_paise < 0 ? `-${money(b.amount_paise)}` : "₹0"}</Text></View>)}</View></Section>
 
-    <Section title={`Expenses · ${data.month?.key || "this month"}`} sub={data.month ? `${money(data.month.total_paise)} recorded this month` : undefined} styles={styles}>{(data.expenses || []).length ? <View style={styles.stack}>{data.expenses.map((e: any) => <Pressable key={e.expense_id} onLongPress={() => removeExpense(e)} style={styles.ledgerRow}><View style={styles.circleIcon}><Ionicons name="receipt-outline" size={17} color={colors.saffron} /></View><View style={{ flex: 1 }}><Text style={styles.memberName}>{e.description}</Text><Text style={styles.muted}>{e.paid_by_name} paid · {e.category}</Text></View><Text style={styles.amount}>{money(e.amount_paise)}</Text></Pressable>)}</View> : <Text style={styles.muted}>No expenses yet. Add the first shared expense above.</Text>}</Section>
+    <Section title={`Expenses · ${data.month?.key || "this month"}`} sub={data.month ? `${money(data.month.total_paise)} recorded this month` : undefined} styles={styles}>{(data.expenses || []).length ? <View style={styles.stack}>{data.expenses.map((e: any) => <Pressable key={e.expense_id} onPress={() => Alert.alert(e.description, `${e.paid_by_name} paid ${money(e.amount_paise)} · ${e.category}`, [{ text: "Close", style: "cancel" }, ...(isAdmin || e.created_by === user?.user_id ? [{ text: "Remove expense", style: "destructive" as const, onPress: () => removeExpense(e) }] : [])])} style={styles.ledgerRow}><View style={styles.circleIcon}><Ionicons name="receipt-outline" size={17} color={colors.saffron} /></View><View style={{ flex: 1 }}><Text style={styles.memberName}>{e.description}</Text><Text style={styles.muted}>{e.paid_by_name} paid · {e.category}</Text></View><Text style={styles.amount}>{money(e.amount_paise)}</Text></Pressable>)}</View> : <Text style={styles.muted}>No expenses yet. Add the first shared expense above.</Text>}</Section>
 
     <Section title="Activity" styles={styles}>{(data.activity || []).length ? <View style={styles.stack}>{data.activity.slice(0, 20).map((a: any) => <View key={a.activity_id} style={styles.activity}><View style={styles.activityDot} /><View style={{ flex: 1 }}><Text style={styles.memberName}>{a.actor_name}</Text><Text style={styles.muted}>{a.label}</Text></View><Text style={styles.tiny}>{new Date(a.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</Text></View>)}</View> : <Text style={styles.muted}>Circle activity will appear here.</Text>}</Section>
   </ScrollView></SafeAreaView>;

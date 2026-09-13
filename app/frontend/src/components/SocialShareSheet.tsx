@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
-import { Alert, Linking, Modal, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { shareText } from "@/src/utils/share";
+import { Alert } from "@/src/utils/alert";
 import { Ionicons } from "@expo/vector-icons";
 import { RADIUS, SPACING } from "@/src/theme";
 import { useTheme } from "@/src/theme_context/ThemeContext";
@@ -14,13 +16,6 @@ async function copyText(value: string) {
   return false;
 }
 
-async function systemShare(payload: SharePayload) {
-  const message = [payload.text, payload.url].filter(Boolean).join("\n");
-  if (Platform.OS === "web" && typeof navigator !== "undefined" && (navigator as any).share) {
-    try { await (navigator as any).share({ title: payload.title, text: payload.text, url: payload.url }); return; } catch {}
-  }
-  try { await Share.share({ title: payload.title, message }); } catch {}
-}
 
 export default function SocialShareSheet({ visible, onClose, payload }: { visible: boolean; onClose: () => void; payload: SharePayload }) {
   const { colors } = useTheme();
@@ -29,7 +24,7 @@ export default function SocialShareSheet({ visible, onClose, payload }: { visibl
   const encodedText = encodeURIComponent(fullText);
   const encodedUrl = encodeURIComponent(payload.url || "https://uni-pool-ruddy.vercel.app");
 
-  const open = async (url: string) => { try { await Linking.openURL(url); } catch {} finally { onClose(); } };
+  const open = async (url: string) => { try { await Linking.openURL(url); } catch (e: any) { Alert.alert("Couldn't open sharing app", e?.message || "Please try again."); } finally { onClose(); } };
   const instagram = async () => {
     const copied = await copyText(fullText).catch(() => false);
     if (copied) Alert.alert("Caption copied", "Paste it into Instagram, Stories, or a DM.");
@@ -37,12 +32,12 @@ export default function SocialShareSheet({ visible, onClose, payload }: { visibl
   };
   const copy = async () => {
     const copied = await copyText(fullText).catch(() => false);
-    if (copied) Alert.alert("Copied", "Share it anywhere you like."); else await systemShare(payload);
+    if (copied) Alert.alert("Copied", "Share it anywhere you like."); else await shareText(payload);
     onClose();
   };
 
   const options = [
-    { key: "share", label: "Share", icon: "share-social-outline" as const, action: async () => { await systemShare(payload); onClose(); } },
+    { key: "share", label: "Share", icon: "share-social-outline" as const, action: async () => { await shareText(payload); onClose(); } },
     { key: "whatsapp", label: "WhatsApp", icon: "logo-whatsapp" as const, action: () => open(`https://wa.me/?text=${encodedText}`) },
     { key: "x", label: "X", icon: "logo-twitter" as const, action: () => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(payload.text)}&url=${encodedUrl}`) },
     { key: "facebook", label: "Facebook", icon: "logo-facebook" as const, action: () => open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodeURIComponent(payload.text)}`) },
@@ -52,7 +47,7 @@ export default function SocialShareSheet({ visible, onClose, payload }: { visibl
 
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
     <Pressable style={styles.backdrop} onPress={onClose}>
-      <Pressable style={styles.sheet} onPress={() => {}}>
+      <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
         <View style={styles.handle} />
         <Text style={styles.title}>{payload.title}</Text>
         <Text style={styles.preview} numberOfLines={3}>{payload.text}</Text>

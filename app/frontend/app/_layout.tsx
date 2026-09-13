@@ -16,6 +16,7 @@ import FloatingChatLauncher from "@/src/components/FloatingChatLauncher";
 import PolicyConsentGate from "@/src/components/PolicyConsentGate";
 import CampusUtilityStrip from "@/src/components/CampusUtilityStrip";
 import FirstLoginTour from "@/src/components/FirstLoginTour";
+import WebAlertHost from "@/src/components/WebAlertHost";
 import PasswordSetupPrompt from "@/src/components/PasswordSetupPrompt";
 
 LogBox.ignoreAllLogs(true);
@@ -119,6 +120,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <AuthProvider>
             <AuthGate />
+            <WebAlertHost />
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

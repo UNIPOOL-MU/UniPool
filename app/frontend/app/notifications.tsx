@@ -89,6 +89,7 @@ export default function NotificationsScreen() {
   const loaded = useRef(false);
   const [items, setItems] = useState<Note[]>([]);
   const [unread, setUnread] = useState(0);
+  const [markingAll, setMarkingAll] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -135,20 +136,31 @@ export default function NotificationsScreen() {
     if (!note.read_at) {
       setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: new Date().toISOString() } : n));
       setUnread((n) => Math.max(0, n - 1));
-      if (note.source === "legacy") api.readNotification(note.notification_id).catch(() => {});
-      else peopleApi.readNotification(note.notification_id).catch(() => {});
+      try {
+        if (note.source === "legacy") await api.readNotification(note.notification_id);
+        else await peopleApi.readNotification(note.notification_id);
+      } catch (e: any) {
+        setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: note.read_at } : n));
+        setUnread((n) => n + 1);
+        setError(e?.message || "Couldn't mark notification as read.");
+      }
     }
     if (note.action_url) router.push(note.action_url as any);
   };
 
   const readAll = async () => {
+    if (markingAll) return;
+    const previous = items;
+    const previousUnread = unread;
+    setMarkingAll(true);
     setItems((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
     setUnread(0);
     try {
       const usesLegacy = items.some((note) => note.source === "legacy");
       if (usesLegacy) await api.readAllNotifications();
       else await peopleApi.readAllNotifications();
-    } catch { load(true); }
+    } catch (e: any) { setItems(previous); setUnread(previousUnread); setError(e?.message || "Couldn't mark notifications as read."); }
+    finally { setMarkingAll(false); }
   };
 
   const visible = items.filter((note) => belongs(note, filter));
@@ -158,7 +170,7 @@ export default function NotificationsScreen() {
     <View style={styles.header}>
       <Pressable onPress={() => router.back()} style={styles.back} accessibilityLabel="Go back"><Ionicons name="chevron-back" size={21} color={colors.onSurface} /></Pressable>
       <View style={{ flex: 1 }}><Text style={styles.eyebrow}>UPDATES</Text><Text style={styles.title}>Notifications</Text></View>
-      {unread > 0 ? <Pressable onPress={readAll} style={styles.readAll}><Text style={styles.readAllText}>Mark all read</Text></Pressable> : null}
+      {unread > 0 ? <Pressable onPress={readAll} disabled={markingAll} style={styles.readAll}><Text style={styles.readAllText}>Mark all read</Text></Pressable> : null}
     </View>
 
     {loading ? <View style={styles.center}><ActivityIndicator color={colors.indigo} /><Text style={styles.muted}>Loading your updates…</Text></View> : <ScrollView

@@ -1,3 +1,4 @@
+import PersonName from "@/src/components/PersonName";
 import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { Alert } from "@/src/utils/alert";
@@ -72,7 +73,7 @@ export default function RatingModal({
           </Pressable>
 
           <Ionicons name="person-circle" size={48} color={colors.indigo} />
-          <Text style={styles.title}>Rate {userName.split(" ")[0]}</Text>
+          <Text style={styles.title}>Rate <PersonName userId={userId} name={userName} beforeOpen={onClose}>{userName.split(" ")[0]}</PersonName></Text>
           <Text style={styles.sub}>How was your experience coordinating this ride?</Text>
 
           {loadingExisting ? (

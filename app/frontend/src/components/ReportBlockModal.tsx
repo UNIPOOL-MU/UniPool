@@ -1,3 +1,4 @@
+import PersonName from "@/src/components/PersonName";
 import React, { useState, useMemo } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { Alert } from "@/src/utils/alert";
@@ -20,7 +21,7 @@ export default function ReportBlockModal({ visible, onClose, userId, userName, p
 
   return <Modal visible={visible} animationType="fade" transparent onRequestClose={() => { reset(); onClose(); }}><View style={styles.backdrop}><View style={styles.card}>
     <Pressable testID="report-close" onPress={() => { reset(); onClose(); }} style={styles.closeBtn} hitSlop={12}><Ionicons name="close" size={22} color={colors.onSurface} /></Pressable>
-    <Ionicons name="shield-outline" size={44} color={colors.error} /><Text style={styles.title}>Safety & privacy</Text><Text style={styles.person}>{userName}</Text>
+    <Ionicons name="shield-outline" size={44} color={colors.error} /><Text style={styles.title}>Safety & privacy</Text><PersonName userId={userId} name={userName} beforeOpen={onClose} style={styles.person} />
     {reported ? <View style={{ alignItems: "center", paddingVertical: SPACING.lg }}><Ionicons name="checkmark-circle" size={40} color={colors.success} /><Text style={styles.sub}>Thanks — our team will review this.</Text><Pressable onPress={() => { reset(); onClose(); }} style={[styles.submitBtn, { marginTop: SPACING.lg }]}><Text style={styles.submitText}>Done</Text></Pressable></View> : <>
       <Text style={styles.sub}>Report serious issues, restrict a conversation, or block this user.</Text>
       <View style={styles.reasonsWrap}>{REASONS.map((r) => <Pressable key={r.id} onPress={() => { setReason(r.id); Haptics.selectionAsync(); }} style={[styles.reasonChip, reason === r.id && styles.reasonChipActive]}><Text style={[styles.reasonText, reason === r.id && styles.reasonTextActive]}>{r.label}</Text></Pressable>)}</View>

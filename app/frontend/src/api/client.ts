@@ -100,6 +100,7 @@ export const api = {
   savePickupPoint: (body: any) => mutate("/pickup-points", { method: "POST", body: JSON.stringify(body) }),
   deletePickupPoint: (id: string) => mutate(`/pickup-points/${id}`, { method: "DELETE" }),
 
+  userProfile: (userId: string) => req(`/users/${encodeURIComponent(userId)}/profile`, {}, 10000),
   travelHistory: (limit = 50) => req(`/travel-history?${query({ limit })}`, {}, 15000), myReliability: () => req("/reliability/me", {}, 10000), userReliability: (userId: string) => req(`/reliability/${userId}`, {}, 10000), mutualContext: (userId: string) => req(`/mutual-context/${userId}`, {}, 10000),
   globalSearch: (q: string) => req(`/search/global?${query({ q })}`, {}, 5000), recordEvent: (event: string, context: Record<string, any> = {}) => mutate("/analytics/events", { method: "POST", body: JSON.stringify({ event, context }) }), productAnalytics: () => req("/analytics/product", {}, 10000),
   reportClientError: (body: any) => mutate("/client-errors", { method: "POST", body: JSON.stringify({ ...body, app_version: FRONTEND_VERSION }) }),

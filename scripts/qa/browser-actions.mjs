@@ -19,6 +19,7 @@ await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url
  if(!u.pathname.includes('/api')&&!u.pathname.includes('/functions/v1/'))return route.fulfill({status:200,body:''});
  const pathname=u.pathname.replace(/^.*\/functions\/v1\/[^/]+/,'').replace(/^.*\/api/,'');calls.push({method:req.method(),path:pathname,body:req.postData()});
  let data=[];
+ if(/^\/users\/[^/]+\/profile$/.test(pathname)){const id=pathname.split('/')[2];if(id==='qa-missing')return route.fulfill({status:404,json:{detail:'User not found'}});return route.fulfill({status:200,json:{user_id:id,name:id==='qa-user'?user.name:pool.user_name,username:'qa-student',college_verified:true,school_name:'School of Sciences',branch_name:'Computational Mathematics',batch_year:2026}});}
  if(pathname==='/expense-groups/qa-circle')data=detail();
  else if(pathname==='/expense-groups')data=[group];
  else if(pathname==='/expense-groups/qa-circle/expenses/qa-expense'&&req.method()==='DELETE'){expenses=[];data={ok:true};}
@@ -44,7 +45,9 @@ await ctx.route('**/*',async route=>{const req=route.request(),u=new URL(req.url
  else if(pathname.includes('/can-rate/'))data={can_rate:true,existing:null};
  else if(pathname.includes('/ratings/user/'))data={average:null,count:0,ratings:[]};
  else if(pathname.includes('/state'))data={pool_id:pool.pool_id,stage:'confirmed',member_count:2};
- else if(pathname.includes('/messages/group/'))data=[];
+ else if(pathname.includes('/messages/group/'))data={name:'QA Trip',members:[user,{user_id:pool.user_id,name:pool.user_name}],messages:[{message_id:'qa-msg',from_user_id:pool.user_id,text:'QA pickup',created_at:new Date().toISOString()}]};
+ else if(pathname==='/messages/conversations')data=[{kind:'direct',other_user_id:pool.user_id,name:pool.user_name,last_message:'QA hello',last_at:new Date().toISOString(),unread:0}];
+ else if(pathname==='/saved')data=[{user_id:pool.user_id,name:pool.user_name}];
  else if(pathname==='/notifications')data=u.pathname.includes('/api/')?{items:[],unread:0}:[{id:'qa-notification',type:'trip',title:'QA notification',body:'Test notification',route:null,read_at:null,created_at:new Date().toISOString()}];
  else if(pathname==='/health')data={ok:true};
  else if(pathname==='/campus-home')data={saved_people:0,circles:0,unread_notifications:0,saved_routes:0,total_xp:0,level:1};
@@ -106,6 +109,14 @@ try{
  }
  await p.setViewportSize({width:390,height:844});
  rides=[{...ride,my_role:'owner',other_user_id:'qa-other',other_user_name:'QA Other'}];await p.goto(origin+'/matches');await p.getByLabel('Remove confirmed traveller').click();await p.getByRole('button',{name:'Remove traveller',exact:true}).click();await p.getByLabel('Remove confirmed traveller').waitFor({state:'detached'});assert(calls.some(c=>c.path==='/pools/qa-pool/travelers/qa-other'&&c.method==='DELETE'));check('Owner removes selected traveller instead of themselves');
+
+ async function assertProfile(id){await p.waitForURL(url=>url.pathname==='/network'&&url.searchParams.get('userId')===id);await p.getByText('Basic details',{exact:true}).waitFor();await p.getByText('School of Sciences',{exact:true}).waitFor();assert(await p.getByText('Computational Mathematics',{exact:true}).count());assert(await p.getByText('Batch 2026',{exact:true}).count());}
+ for(const [pathname,id,label] of [['/(tabs)','qa-owner',"Open QA Owner's profile"],['/messages','qa-owner',"Open QA Owner's profile"],['/chat/qa-owner?name=QA%20Owner','qa-owner',"Open QA Owner's profile"],['/chat/group/qa-chat','qa-owner',"Open QA Owner's profile"],['/people','qa-owner',"Open QA Owner's profile"],['/circles/qa-circle','qa-user',"Open QA Student's profile"],['/trip-receipt/qa-pool','qa-user',"Open QA Student's profile"]]){
+  await p.goto(origin+pathname);if(pathname==='/circles/qa-circle')await p.getByText('Members',{exact:true}).click();
+  await p.getByRole('link',{name:label,exact:true}).first().click();await assertProfile(id);check('Name opens correct basic profile from '+pathname);
+ }
+ await p.goto(origin+'/(tabs)');await p.getByRole('link',{name:"Open QA Owner's profile",exact:true}).first().focus();await p.keyboard.press('Enter');await assertProfile('qa-owner');check('Keyboard Enter opens name profile');
+ await p.goto(origin+'/network?userId=qa-missing&name=Missing');await p.getByText('User not found',{exact:true}).waitFor();await p.getByLabel('Retry profile').waitFor();check('Missing profile shows error and retry');
  assert.equal(errors.length,0,errors.join('\n'));
 
  console.log(JSON.stringify({checks:checks.length+3,calls:calls.length,errors},null,2));

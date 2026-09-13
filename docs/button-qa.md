@@ -15,12 +15,12 @@
 
 | Check | Scope | Result |
 |---|---|---|
-| Source control inventory | 373 control declarations across 55 screens/components | No missing handlers or missing literal navigation destinations |
+| Source control inventory | 374 control declarations across 55 screens/components | No missing handlers or missing literal navigation destinations |
 | Alert regression guard | All frontend TS/TSX imports | Direct no-op native web Alert imports rejected |
 | Browser route smoke pass | 38 page/parameter combinations, including all 8 games | Rendered without page errors using isolated API fixtures |
 | Browser action regressions | Leave Cancel/success/failure; owner removal; rating validation/submission; safety Cancel; expense tap/nested Cancel; sharing fallback; search-to-form; trip validation; three-action duplicate prompts; pickup validation; notification rollback; toolbar/chat navigation; export/print invocation | Scripted assertions passed |
 | Responsive action reachability | Leave at 320, 390, 768 and 1280 pixels | Within the viewport |
-| Backend tests | 47 tests, including self-leave, owner removal, protected owner/outsider permissions, missing traveller and API route contract | Passed |
+| Backend tests | 50 tests, including self-leave, owner removal, protected owner/outsider permissions, missing traveller and API route contract | Passed |
 | Frontend checks | TypeScript and Expo web export | Passed |
 
 The optional click sweep is diagnostic interaction coverage; it is not proof that each full production workflow succeeds.
@@ -49,3 +49,9 @@ node scripts/qa/browser-actions.mjs
 ```
 
 The browser script creates an ephemeral local server and closes it on completion. It blocks external HTTP traffic and mocks all API calls. It requires no real account credentials.
+
+## Profile name navigation
+
+Account names now open profiles from feed cards, direct chat lists/headers, group chat members/senders, people search/saved contacts, Circle members/balances/settlements/expense payers/activity, receipt travellers, leaderboard and rating/safety modals, mutual travellers and map popups. Existing trip detail/Matches/live links retain their profile navigation. Names without an account ID (for example manually entered trusted contacts) remain plain text. Selection controls for payers and feedback recipients retain their selection action.
+
+The authenticated public-profile endpoint returns only name, username, picture, verification and academic fields. Email, phone, roll number and credentials are excluded. Browser assertions cover correct account IDs from seven surfaces, displayed academic details and missing-profile feedback/retry. The updated regression suite passed 75 checks; a final focused pass also verified all seven name-entry surfaces, keyboard Enter activation and missing-profile feedback; the backend suite passed 50 tests, including profile field allowlisting, authentication and missing accounts.

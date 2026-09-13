@@ -9,6 +9,7 @@ import { geocode, loadLeafletRoutingMachine } from "@/src/utils/mapUtils";
 type Coords = { lat?: number | null; lng?: number | null } | null;
 type Pool = {
   pool_id: string;
+  user_id?: string;
   user_name: string;
   from_location: string;
   to_location: string;
@@ -167,7 +168,15 @@ export default function PoolMapView({ pools }: { pools: Pool[] }) {
           const fromMarker = window.L.circleMarker([fromCoords.lat, fromCoords.lng], {
             radius: 8, color: "#F57F17", fillColor: "#F57F17", fillOpacity: 0.95, weight: 2,
           }).addTo(mapRef.current);
-          fromMarker.bindPopup(`<strong>${pool.user_name}</strong><br/>${pool.from_location} → ${pool.to_location}<br/><span style="color:#888">${ratingText}</span>${routeText}`);
+          const popup = document.createElement("div");
+          const person = document.createElement(pool.user_id ? "a" : "strong");
+          person.textContent = pool.user_name;
+          if (pool.user_id) (person as HTMLAnchorElement).href = `/network?userId=${encodeURIComponent(pool.user_id)}&name=${encodeURIComponent(pool.user_name)}`;
+          popup.append(person, document.createElement("br"), document.createTextNode(`${pool.from_location} → ${pool.to_location}`), document.createElement("br"), document.createTextNode(ratingText));
+          const summary = document.createElement("div");
+          summary.innerHTML = routeText;
+          popup.append(summary);
+          fromMarker.bindPopup(popup);
           layersRef.current.push(fromMarker);
 
           const toMarker = window.L.circleMarker([toCoords.lat, toCoords.lng], {

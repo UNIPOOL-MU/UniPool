@@ -1,3 +1,4 @@
+import PersonName from "@/src/components/PersonName";
 import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, StyleSheet, Modal, Pressable, ActivityIndicator, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -79,9 +80,9 @@ export default function LeaderboardModal({
                   <View style={[styles.rankBadge, index < 3 && { backgroundColor: MEDAL_COLORS[index] }]}>
                     <Text style={[styles.rankText, index < 3 && { color: "#3D2E00" }]}>{index + 1}</Text>
                   </View>
-                  <Text style={styles.name} numberOfLines={1}>
+                  <PersonName userId={item.user_id} name={item.user_name} beforeOpen={onClose} style={styles.name} numberOfLines={1}>
                     {item.user_name}{item.user_id === user?.user_id ? " (you)" : ""}
-                  </Text>
+                  </PersonName>
                   <Text style={styles.score}>{item.score}{unit ? ` ${unit}` : ""}</Text>
                 </View>
               )}

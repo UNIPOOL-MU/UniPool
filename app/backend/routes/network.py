@@ -125,6 +125,15 @@ async def my_reliability(authorization: Optional[str] = Header(None)):
     return await _reliability(user["user_id"])
 
 
+@router.get("/users/{user_id}/profile")
+async def public_profile(user_id: str, authorization: Optional[str] = Header(None)):
+    await _user(authorization)
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return _public_user(user)
+
+
 @router.get("/reliability/{user_id}")
 async def user_reliability(user_id: str, authorization: Optional[str] = Header(None)):
     await _user(authorization)

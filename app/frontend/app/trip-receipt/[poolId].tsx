@@ -1,3 +1,4 @@
+import PersonName from "@/src/components/PersonName";
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Platform, ScrollView } from "react-native";
 import { shareText } from "@/src/utils/share";
@@ -116,7 +117,7 @@ export default function TripReceiptScreen() {
               travelers.map((t) => (
                 <View key={t.user_id} style={styles.travelerRow}>
                   <Ionicons name="person-circle" size={16} color={colors.indigo} />
-                  <Text style={styles.travelerName}>{t.name}</Text>
+                  <PersonName userId={t.user_id} name={t.name} style={styles.travelerName} />
                 </View>
               ))
             ) : (

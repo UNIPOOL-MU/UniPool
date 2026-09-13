@@ -1,5 +1,6 @@
+import PersonName from "@/src/components/PersonName";
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -21,13 +22,18 @@ export default function TravelNetworkScreen() {
   const [reliability, setReliability] = useState<Reliability | null>(null);
   const [structured, setStructured] = useState<FeedbackSummary | null>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [context, setContext] = useState<any>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setProfile(null); setProfileError(null);
     try {
       if (otherUserId) {
-        const [rel, ctx, feedback] = await Promise.allSettled([api.userReliability(otherUserId), api.mutualContext(otherUserId), feedbackApi.summary(otherUserId)]);
+        const [rel, ctx, feedback, person] = await Promise.allSettled([api.userReliability(otherUserId), api.mutualContext(otherUserId), feedbackApi.summary(otherUserId), api.userProfile(otherUserId)]);
+        setProfile(person.status === "fulfilled" ? person.value : null);
+        setProfileError(person.status === "rejected" ? person.reason?.message || "Could not load profile" : null);
         setReliability(rel.status === "fulfilled" ? rel.value : null);
         setContext(ctx.status === "fulfilled" ? ctx.value : null);
         setStructured(feedback.status === "fulfilled" ? feedback.value : null);
@@ -36,7 +42,7 @@ export default function TravelNetworkScreen() {
         const [rel, trips] = await Promise.all([api.myReliability(), api.travelHistory(60)]);
         setReliability(rel); setHistory(trips || []); setContext(null); setStructured(null);
       }
-    } finally { setLoading(false); }
+    } catch { setProfileError("Could not load profile. Please try again."); } finally { setLoading(false); }
   }, [otherUserId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -49,11 +55,12 @@ export default function TravelNetworkScreen() {
   return <SafeAreaView style={styles.safe} edges={["top"]}>
     <View style={styles.header}>
       <Pressable onPress={() => router.back()} style={styles.back}><Ionicons name="chevron-back" size={21} color={colors.onSurface} /></Pressable>
-      <View style={{ flex: 1 }}><Text style={styles.eyebrow}>{otherUserId ? "TRAVELLER CONTEXT" : "YOUR NETWORK"}</Text><Text style={styles.title}>{otherUserId ? params.name || "Traveller" : "Travel history & reliability"}</Text></View>
+      <View style={{ flex: 1 }}><Text style={styles.eyebrow}>{otherUserId ? "TRAVELLER CONTEXT" : "YOUR NETWORK"}</Text><Text style={styles.title}>{otherUserId ? profile?.name || params.name || "Traveller" : "Travel history & reliability"}</Text></View>
       {otherUserId ? <Pressable onPress={() => router.push({ pathname: "/chat/[userId]", params: { userId: otherUserId, name: params.name || "Traveller" } })} style={styles.chatBtn}><Ionicons name="chatbubble-outline" size={18} color={colors.indigo} /></Pressable> : null}
     </View>
 
     {loading ? <View style={styles.loading}><ActivityIndicator color={colors.indigo} /><Text style={styles.muted}>Building travel context…</Text></View> : <ScrollView contentContainerStyle={styles.content}>
+      {otherUserId ? <View style={styles.contextCard}><Text style={styles.sectionTitle}>Basic details</Text>{profileError ? <><Text style={styles.muted}>{profileError}</Text><Pressable accessibilityLabel="Retry profile" onPress={load}><Text style={styles.repeatText}>Try again</Text></Pressable></> : <><>{profile?.picture ? <Image accessibilityLabel="Profile photo" source={{ uri: profile.picture }} style={{ width: 64, height: 64, borderRadius: 32, marginBottom: 10 }} /> : null}</><Text style={styles.cardTitle}>{profile?.name || params.name || "Traveller"}</Text>{profile?.username ? <Text style={styles.muted}>@{profile.username}</Text> : null}<Text style={styles.muted}>{profile?.college_verified ? "MU ID verified" : "University ID not verified"}</Text>{[profile?.school_name, profile?.program_name, profile?.branch_name, profile?.batch_year ? `Batch ${profile.batch_year}` : null].filter(Boolean).map((detail: string) => <Text key={detail} style={styles.muted}>{detail}</Text>)}</>}</View> : null}
       {!otherUserId && reliability ? <View style={styles.scoreCard}><View style={styles.scoreCircle}><Text style={styles.score}>{reliability.score}</Text><Text style={styles.scoreUnit}>/100</Text></View><View style={{ flex: 1 }}><Text style={styles.scoreLabel}>{reliability.label}</Text><Text style={styles.scoreSub}>This private self-view combines your completed travel, ratings, request responses and cancellations.</Text></View></View> : null}
 
       {otherUserId ? <View style={styles.trustCard}><View style={styles.trustTop}><View style={styles.trustIcon}><Ionicons name="shield-checkmark-outline" size={22} color={colors.indigo} /></View><View style={{ flex: 1 }}><Text style={styles.scoreLabel}>Trip feedback</Text><Text style={styles.scoreSub}>{structured?.count ? `${structured.count} completed-trip feedback record${structured.count === 1 ? "" : "s"}.` : "No structured trip feedback yet. UniPool does not invent a public score."}</Text></View>{structured?.overall != null && structured.count > 0 ? <View style={styles.overall}><Text style={styles.overallValue}>{structured.overall.toFixed(1)}</Text><Text style={styles.overallUnit}>/5</Text></View> : null}</View>{structured?.count ? <View style={styles.trustGrid}><TrustMetric label="Punctuality" value={structured.punctuality} styles={styles} /><TrustMetric label="Coordination" value={structured.coordination} styles={styles} /><TrustMetric label="Behaviour" value={structured.behaviour} styles={styles} /></View> : null}</View> : null}
@@ -65,12 +72,12 @@ export default function TravelNetworkScreen() {
         <View style={styles.contextCard}>
           {(context?.academic || []).map((item: string) => <Pill key={item} icon="school-outline" text={item} colors={colors} styles={styles} />)}
           {context?.shared_trips > 0 ? <Pill icon="car-sport-outline" text={`${context.shared_trips} past trip${context.shared_trips === 1 ? "" : "s"} together`} colors={colors} styles={styles} /> : null}
-          {(context?.mutual_travellers || []).map((person: any) => <Pill key={person.user_id} icon="people-outline" text={`Both travelled with ${person.name}`} colors={colors} styles={styles} />)}
+          {(context?.mutual_travellers || []).map((person: any) => <Text key={person.user_id} style={styles.pillText}>Both travelled with <PersonName userId={person.user_id} name={person.name} /></Text>)}
           {!(context?.academic?.length || context?.shared_trips || context?.mutual_travellers?.length) ? <Text style={styles.muted}>No shared academic or travel context yet. Treat a new connection as new rather than inferring trust.</Text> : null}
         </View>
       </> : <>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Past trips</Text><Text style={styles.muted}>{history.length} shown</Text></View>
-        {history.length === 0 ? <View style={styles.empty}><Ionicons name="trail-sign-outline" size={25} color={colors.indigo} /><Text style={styles.cardTitle}>Your travel history starts after completed rides</Text><Text style={styles.muted}>Trips are only counted once they are genuinely completed.</Text></View> : <View style={styles.stack}>{history.map((trip) => <View key={trip.pool_id} style={styles.tripCard}><Pressable onPress={() => router.push(`/pool/${trip.pool_id}` as any)} style={styles.tripMain}><View style={styles.tripTop}><View style={styles.tripIcon}><Ionicons name="navigate" size={15} color={colors.indigo} /></View><Text style={styles.tripDate}>{new Date(trip.travel_datetime).toLocaleString([], { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}</Text></View><Text style={styles.route}>{trip.from_location} → {trip.to_location}</Text><Text style={styles.muted}>{(trip.co_travellers || []).length ? `With ${(trip.co_travellers || []).map((p: any) => p.name?.split(" ")[0]).join(", ")}` : "Solo listing"}</Text></Pressable><View style={styles.tripActions}><Pressable onPress={() => router.push(`/pool/${trip.pool_id}` as any)} style={styles.smallAction}><Ionicons name="receipt-outline" size={14} color={colors.muted} /><Text style={styles.smallActionText}>Details</Text></Pressable><Pressable onPress={() => repeatTrip(trip)} style={styles.repeatButton}><Ionicons name="repeat" size={14} color={colors.saffron} /><Text style={styles.repeatText}>Repeat route</Text></Pressable></View></View>)}</View>}
+        {history.length === 0 ? <View style={styles.empty}><Ionicons name="trail-sign-outline" size={25} color={colors.indigo} /><Text style={styles.cardTitle}>Your travel history starts after completed rides</Text><Text style={styles.muted}>Trips are only counted once they are genuinely completed.</Text></View> : <View style={styles.stack}>{history.map((trip) => <View key={trip.pool_id} style={styles.tripCard}><Pressable onPress={() => router.push(`/pool/${trip.pool_id}` as any)} style={styles.tripMain}><View style={styles.tripTop}><View style={styles.tripIcon}><Ionicons name="navigate" size={15} color={colors.indigo} /></View><Text style={styles.tripDate}>{new Date(trip.travel_datetime).toLocaleString([], { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}</Text></View><Text style={styles.route}>{trip.from_location} → {trip.to_location}</Text><Text style={styles.muted}>{(trip.co_travellers || []).length ? <>With {(trip.co_travellers || []).map((person: any, index: number) => <React.Fragment key={person.user_id}>{index ? ", " : ""}<PersonName userId={person.user_id} name={person.name}>{person.name?.split(" ")[0]}</PersonName></React.Fragment>)}</> : "Solo listing"}</Text></Pressable><View style={styles.tripActions}><Pressable onPress={() => router.push(`/pool/${trip.pool_id}` as any)} style={styles.smallAction}><Ionicons name="receipt-outline" size={14} color={colors.muted} /><Text style={styles.smallActionText}>Details</Text></Pressable><Pressable onPress={() => repeatTrip(trip)} style={styles.repeatButton}><Ionicons name="repeat" size={14} color={colors.saffron} /><Text style={styles.repeatText}>Repeat route</Text></Pressable></View></View>)}</View>}
       </>}
     </ScrollView>}
   </SafeAreaView>;

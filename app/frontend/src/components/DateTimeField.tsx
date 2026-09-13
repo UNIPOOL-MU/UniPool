@@ -44,6 +44,9 @@ export default function DateTimeField({ mode, value, onChangeText, placeholder }
         fontSize: 15,
         fontFamily: "inherit",
         cursor: "pointer",
+        appearance: "none",
+        WebkitAppearance: "none",
+        MozAppearance: "textfield",
         colorScheme: colors.surface === "#101214" || colors.surface === "#0D1015" ? "dark" : "normal",
       },
     });

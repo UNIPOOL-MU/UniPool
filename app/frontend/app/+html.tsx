@@ -14,7 +14,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <meta name="apple-mobile-web-app-title" content="UniPool" />
       <link rel="manifest" href="/manifest.webmanifest" />
       <ScrollViewStyleReset />
-      <style dangerouslySetInnerHTML={{ __html: `html,body,#root{height:100%;margin:0}body{overscroll-behavior-y:none}` }} />
+      <style dangerouslySetInnerHTML={{ __html: `html,body,#root{height:100%;width:100%;margin:0;min-width:0}body{overscroll-behavior-y:none}#root{isolation:isolate}` }} />
     </head>
     <body>{children}</body>
   </html>;

@@ -342,8 +342,8 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.finalCtaSection}>
-        <View style={styles.finalCtaInner}>
-          <View>
+        <View style={[styles.finalCtaInner, !isWide && { flexDirection: "column", alignItems: "stretch" }]}>
+          <View style={styles.finalCopy}>
             <Text style={styles.finalEyebrow}>{user ? "YOU'RE SIGNED IN" : "READY WHEN YOU ARE"}</Text>
             <Text style={styles.finalTitle}>{user ? "Choose where you want to go next." : "Keep the trip in one place from planning to settlement."}</Text>
             <Text style={styles.finalLead}>{user ? "Your session stays active while this landing page remains the default entry point." : "Create a UniPool account with any valid email, or use Google if you prefer."}</Text>
@@ -523,14 +523,14 @@ const styles = StyleSheet.create({
 
   tripStorySection: { backgroundColor: "#112654", paddingVertical: 86 },
   tripStoryInner: { flexDirection: "row", flexWrap: "wrap", gap: 48, alignItems: "center" },
-  storyCopy: { flexGrow: 1, flexBasis: 480 },
+  storyCopy: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexBasis: 480 },
   darkEyebrow: { color: "#FFBC62", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 },
   darkTitle: { color: "#F8FAFF", fontSize: 36, lineHeight: 44, fontWeight: "800", marginTop: 10, fontFamily: FONT_DISPLAY },
   darkLead: { color: "#B9C6DB", fontSize: 15, lineHeight: 24, marginTop: 12, maxWidth: 620 },
   storyBadges: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 23 },
   storyBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   storyBadgeText: { color: "#DCE6F7", fontSize: 11, fontWeight: "700" },
-  journeyCard: { flexGrow: 1, flexBasis: 360, borderRadius: 26, padding: 24, backgroundColor: "#F8FAFF" },
+  journeyCard: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexBasis: 360, borderRadius: 26, padding: 24, backgroundColor: "#F8FAFF" },
   journeyStep: { flexDirection: "row", gap: 15 },
   journeyRail: { width: 40, alignItems: "center" },
   journeyDot: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#FFD38A", alignItems: "center", justifyContent: "center" },
@@ -577,6 +577,7 @@ const styles = StyleSheet.create({
 
   finalCtaSection: { backgroundColor: "#071735", paddingTop: 70, paddingBottom: 34 },
   finalCtaInner: { width: "100%", maxWidth: 1040, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 28, borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "#102654", paddingVertical: 34 },
+  finalCopy: { flexGrow: 1, flexShrink: 1, minWidth: 0, maxWidth: "100%" },
   finalEyebrow: { color: COLORS.saffron, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   finalTitle: { color: "#F8FAFF", fontSize: 28, lineHeight: 35, fontWeight: "800", marginTop: 7, maxWidth: 620, fontFamily: FONT_DISPLAY },
   finalLead: { color: "#AEBBD0", fontSize: 13, lineHeight: 20, marginTop: 7 },

@@ -16,7 +16,7 @@ const ICONS: Record<string, { active: any; inactive: any }> = {
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
-  const desktopWeb = Platform.OS === "web" && width >= 820;
+  const desktopWeb = Platform.OS === "web" && width >= 1260;
   const barBackground = isDark ? "rgba(23,26,29,0.96)" : "rgba(255,255,255,0.97)";
 
   return (

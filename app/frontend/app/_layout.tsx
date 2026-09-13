@@ -52,10 +52,10 @@ function AuthGate() {
   if (loading) return <AnimatedSplash />;
 
   const shell = (
-    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+    <View style={{ flex: 1, width: "100%", minWidth: 0, backgroundColor: colors.surface }}>
       {user && !isLanding ? <WebTopBar /> : null}
       {user && onHome ? <CampusUtilityStrip /> : null}
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minWidth: 0, width: "100%" }}>
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface }, animation: "fade_from_bottom" }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(tabs)" />

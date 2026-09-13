@@ -54,7 +54,7 @@ export default function CampusUtilityStrip() {
 
   return (
     <View style={[styles.shell, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: "100%", minWidth: 0 }} contentContainerStyle={styles.row}>
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>CAMPUS</Text>
           <Text style={styles.introText}>People · groups · money</Text>
@@ -80,11 +80,9 @@ export default function CampusUtilityStrip() {
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  shell: { borderBottomWidth: StyleSheet.hairlineWidth },
+  shell: { width: "100%", minWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth },
   row: {
-    width: "100%",
-    maxWidth: 980,
-    alignSelf: "center",
+    flexGrow: 1,
     paddingHorizontal: 18,
     paddingVertical: 9,
     alignItems: "center",
@@ -94,8 +92,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   eyebrow: { color: colors.saffron, fontSize: 8, fontWeight: "900", letterSpacing: 1.1 },
   introText: { color: colors.muted, fontSize: 9, marginTop: 2 },
   item: {
-    flexGrow: 1,
-    flexBasis: 170,
+    width: 170,
+    flexShrink: 0,
     minWidth: 160,
     maxWidth: 205,
     height: 48,

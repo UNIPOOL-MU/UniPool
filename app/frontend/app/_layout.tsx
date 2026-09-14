@@ -71,6 +71,7 @@ function AuthGate() {
           <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="people" options={{ animation: "slide_from_right" }} />
+          <Stack.Screen name="admin" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="campus" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="safety" options={{ animation: "slide_from_right" }} />
 

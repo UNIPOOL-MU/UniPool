@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform, Image, TextInput } from "react-native";
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform, Image } from "react-native";
 import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,12 +71,6 @@ export default function ProfileScreen() {
   const [blocked, setBlocked] = useState<{ user_id: string; name: string }[]>([]);
   const [unblockingId, setUnblockingId] = useState<string | null>(null);
 
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [adminStats, setAdminStats] = useState<any>(null);
-  const [adminPools, setAdminPools] = useState<Pool[]>([]);
-  const [adminPeople, setAdminPeople] = useState<any[]>([]);
-  const [adminPeopleQuery, setAdminPeopleQuery] = useState("");
-  const [adminLoading, setAdminLoading] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
   const [pictureSaving, setPictureSaving] = useState(false);
   const knownBadgeIds = useRef<Set<string> | null>(null);
@@ -185,29 +179,6 @@ export default function ProfileScreen() {
     try { await api.reopenPool(id); await load(); Haptics.selectionAsync(); } catch (e: any) { Alert.alert("Error", e.message); }
   };
 
-  const loadAdmin = async () => {
-    setAdminLoading(true);
-    try {
-      const [stats, pools, people] = await Promise.all([api.adminStats(), api.adminPools(), api.adminPeople()]);
-      setAdminStats(stats);
-      setAdminPools(pools);
-      setAdminPeople(people || []);
-    } catch (e: any) {
-      Alert.alert("Admin error", e.message);
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
-  const toggleAdmin = () => {
-    const next = !adminOpen;
-    setAdminOpen(next);
-    if (next && !adminStats) loadAdmin();
-  };
-
-  const adminRemove = async (id: string) => {
-    try { await api.adminDeletePool(id); await loadAdmin(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e: any) { Alert.alert("Error", e.message); }
-  };
 
   const filtered = myPools.filter((p) => (tab === "open" ? (p.status ?? "open") === "open" : p.status === "closed"));
 
@@ -493,46 +464,11 @@ export default function ProfileScreen() {
           <>
             {adminAccess ? (
               <View style={{ marginTop: SPACING.xl }}>
-                <Pressable testID="admin-panel-toggle" onPress={toggleAdmin} style={styles.adminToggle}>
+                <Pressable testID="admin-panel-toggle" onPress={() => router.push("/admin" as any)} style={styles.adminToggle}>
                   <Ionicons name="shield" size={16} color={colors.indigo} />
-                  <Text style={styles.adminToggleText}>Admin panel</Text>
-                  <Ionicons name={adminOpen ? "chevron-up" : "chevron-down"} size={16} color={colors.indigo} />
+                  <Text style={styles.adminToggleText}>Open admin control centre</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.indigo} />
                 </Pressable>
-                {adminOpen && (
-                  <View style={styles.adminPanel}>
-                    {adminLoading ? (
-                      <ActivityIndicator color={colors.indigo} />
-                    ) : (
-                      <>
-                        {adminStats && (
-                          <View style={styles.statsRow}>
-                            <Stat label="Users" value={adminStats.total_users} styles={styles} />
-                            <Stat label="Open" value={adminStats.open_pools} styles={styles} />
-                            <Stat label="Closed" value={adminStats.closed_pools} styles={styles} />
-                          </View>
-                        )}
-                        <Text style={styles.adminSectionTitle}>People directory ({adminPeople.length})</Text>
-                        <TextInput value={adminPeopleQuery} onChangeText={setAdminPeopleQuery} placeholder="Filter by name or email" placeholderTextColor={colors.muted} style={styles.adminSearch} />
-                        {adminPeople.filter((p) => `${p.name || ""} ${p.email || ""} ${p.username || ""}`.toLowerCase().includes(adminPeopleQuery.toLowerCase())).slice(0, 100).map((p) => (
-                          <Pressable key={p.user_id} onPress={() => router.push({ pathname: "/network", params: { userId: p.user_id, name: p.name || "Traveller" } })} style={styles.adminRow}>
-                            <View style={{ flex: 1 }}><Text style={styles.adminRoute}>{p.name || "Traveller"}</Text><Text style={styles.adminMeta}>{p.email || "No email"}{p.college_verified ? " · MU verified" : ""}</Text></View><Ionicons name="chevron-forward" size={16} color={colors.muted} />
-                          </Pressable>
-                        ))}
-                        {adminPools.map((p) => (
-                          <View key={p.pool_id} style={styles.adminRow} testID={`admin-pool-${p.pool_id}`}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.adminRoute}>{p.from_location} → {p.to_location}</Text>
-                              <Text style={styles.adminMeta}>{p.user_name} · {p.user_email} · {p.status ?? "open"}</Text>
-                            </View>
-                            <Pressable testID={`admin-delete-${p.pool_id}`} onPress={() => adminRemove(p.pool_id)} hitSlop={8}>
-                              <Ionicons name="trash" size={18} color={colors.error} />
-                            </Pressable>
-                          </View>
-                        ))}
-                      </>
-                    )}
-                  </View>
-                )}
               </View>
             ) : null}
             <Pressable testID="logout-button" onPress={signOut} style={styles.logout}>

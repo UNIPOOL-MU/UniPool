@@ -95,6 +95,10 @@ export const peopleApi = {
   rsvpCampusEvent: (id: string, status: "going" | "interested") => peopleRequest(`/campus-events/${encodeURIComponent(id)}/rsvp`, { method: "POST", body: JSON.stringify({ status }) }),
   clearCampusEventRsvp: (id: string) => peopleRequest(`/campus-events/${encodeURIComponent(id)}/rsvp`, { method: "DELETE" }),
   campusHome: () => peopleRequest("/campus-home") as Promise<CampusHome>,
+  adminPeople: () => peopleRequest("/admin/people") as Promise<DirectoryPerson[]>,
+  adminStats: () => peopleRequest("/admin/stats") as Promise<{ total_users: number; open_pools: number; closed_pools: number }>,
+  adminPools: () => peopleRequest("/admin/pools") as Promise<any[]>,
 };
 
 export { PEOPLE_BASE };
+

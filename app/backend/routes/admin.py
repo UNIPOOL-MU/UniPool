@@ -303,3 +303,4 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
 
 # Export the router
 __all__ = ["router"]
+

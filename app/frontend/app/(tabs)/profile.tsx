@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform, Image } from "react-native";
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Platform, Image, TextInput } from "react-native";
 import { Alert } from "@/src/utils/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -73,6 +73,8 @@ export default function ProfileScreen() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [adminStats, setAdminStats] = useState<any>(null);
   const [adminPools, setAdminPools] = useState<Pool[]>([]);
+  const [adminPeople, setAdminPeople] = useState<any[]>([]);
+  const [adminPeopleQuery, setAdminPeopleQuery] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
   const [pictureSaving, setPictureSaving] = useState(false);
@@ -185,9 +187,10 @@ export default function ProfileScreen() {
   const loadAdmin = async () => {
     setAdminLoading(true);
     try {
-      const [stats, pools] = await Promise.all([api.adminStats(), api.adminPools()]);
+      const [stats, pools, people] = await Promise.all([api.adminStats(), api.adminPools(), api.adminPeople()]);
       setAdminStats(stats);
       setAdminPools(pools);
+      setAdminPeople(people || []);
     } catch (e: any) {
       Alert.alert("Admin error", e.message);
     } finally {
@@ -507,6 +510,13 @@ export default function ProfileScreen() {
                             <Stat label="Closed" value={adminStats.closed_pools} styles={styles} />
                           </View>
                         )}
+                        <Text style={styles.adminSectionTitle}>People directory ({adminPeople.length})</Text>
+                        <TextInput value={adminPeopleQuery} onChangeText={setAdminPeopleQuery} placeholder="Filter by name or email" placeholderTextColor={colors.muted} style={styles.adminSearch} />
+                        {adminPeople.filter((p) => `${p.name || ""} ${p.email || ""} ${p.username || ""}`.toLowerCase().includes(adminPeopleQuery.toLowerCase())).slice(0, 100).map((p) => (
+                          <Pressable key={p.user_id} onPress={() => router.push({ pathname: "/network", params: { userId: p.user_id, name: p.name || "Traveller" } })} style={styles.adminRow}>
+                            <View style={{ flex: 1 }}><Text style={styles.adminRoute}>{p.name || "Traveller"}</Text><Text style={styles.adminMeta}>{p.email || "No email"}{p.college_verified ? " · MU verified" : ""}</Text></View><Ionicons name="chevron-forward" size={16} color={colors.muted} />
+                          </Pressable>
+                        ))}
                         {adminPools.map((p) => (
                           <View key={p.pool_id} style={styles.adminRow} testID={`admin-pool-${p.pool_id}`}>
                             <View style={{ flex: 1 }}>
@@ -607,7 +617,7 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
   adminToggle: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, paddingVertical: 12, paddingHorizontal: SPACING.lg, justifyContent: "center" },
   adminToggleText: { color: colors.indigo, fontWeight: "700", flex: 1, textAlign: "center" },
-  adminPanel: { marginTop: SPACING.sm, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, padding: SPACING.md },
+  adminPanel: { marginTop: SPACING.sm, backgroundColor: colors.card, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, padding: SPACING.md }, adminSectionTitle: { color: colors.onSurface, fontWeight: "900", fontSize: 13, marginTop: SPACING.md, marginBottom: 7 }, adminSearch: { minHeight: 40, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.md, paddingHorizontal: 11, color: colors.onSurface, marginBottom: 5 },
   statsRow: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.md },
   statBox: { flex: 1, alignItems: "center", backgroundColor: colors.surface2, borderRadius: RADIUS.md, paddingVertical: SPACING.sm },
   statValue: { fontSize: FONT.xl, fontWeight: "800", color: colors.indigo },

@@ -24,7 +24,7 @@ SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 SENDGRID_FROM_EMAIL = os.environ.get("SENDGRID_FROM_EMAIL", GMAIL_ADDRESS)
 TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
 
-ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()} | {"utkarsh7023340530@gmail.com"}
 DEFAULT_VERIFIED_SUFFIXES = (".edu", ".edu.in", ".ac.in")
 VERIFIED_EMAIL_DOMAINS = {d.strip().lower() for d in os.environ.get("VERIFIED_EMAIL_DOMAINS", "").split(",") if d.strip()}
 

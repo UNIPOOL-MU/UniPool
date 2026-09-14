@@ -12,6 +12,7 @@ sys.path.insert(0, str(backend_dir))
 
 from fastapi import APIRouter, HTTPException, Header
 from typing import List, Optional
+from config.database import db
 from services.admin_service import (
     require_admin, get_admin_stats, list_admin_pools,
     admin_delete_pool, migrate_ratings_scale, refresh_college_info,
@@ -26,6 +27,21 @@ logger = logging.getLogger("unipool.routes.admin")
 
 # Create router
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+@router.get("/people", response_model=List[dict])
+async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    user = await get_current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    try:
+        await require_admin(user)
+        return await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).limit(1000).to_list(1000)
+    except Exception as e:
+        if "Admin access required" in str(e): raise HTTPException(status_code=403, detail=str(e))
+        logger.warning("Admin people list failed: %s", e)
+        raise HTTPException(status_code=500, detail="Could not load people")
 
 
 @router.get("/stats", response_model=dict)

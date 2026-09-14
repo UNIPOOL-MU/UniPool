@@ -566,3 +566,4 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: SPACING.xl, paddingVertical: 14, borderRadius: RADIUS.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.error },
   logoutText: { color: colors.error, fontWeight: "700" },
 });
+

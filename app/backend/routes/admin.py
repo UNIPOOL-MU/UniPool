@@ -38,7 +38,17 @@ async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     try:
         await require_admin(user)
-        return await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).limit(1000).to_list(1000)
+        # Keep the directory response deliberately small and JSON-safe.  In
+        # particular, never leak credential fields to the admin UI and avoid
+        # serialising provider-specific Mongo fields that can break the mobile
+        # client when a legacy record is encountered.
+        projection = {
+            "_id": 0, "password_hash": 0, "session_token": 0,
+            "email_verification_token": 0, "reset_token": 0,
+        }
+        return await db.users.find({}, projection).sort("created_at", -1).limit(1000).to_list(1000)
+    except HTTPException:
+        raise
     except Exception as e:
         if "Admin access required" in str(e): raise HTTPException(status_code=403, detail=str(e))
         logger.warning("Admin people list failed: %s", e)
@@ -58,6 +68,8 @@ async def admin_stats_endpoint(authorization: Optional[str] = Header(None)):
 
         stats = await get_admin_stats(user)
         return stats
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"Admin stats failed: {e}")
         if "Admin access required" in str(e):
@@ -78,6 +90,8 @@ async def admin_list_pools_endpoint(authorization: Optional[str] = Header(None))
 
         pools = await list_admin_pools(user)
         return pools
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"Admin list pools failed: {e}")
         if "Admin access required" in str(e):

@@ -30,6 +30,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/people", response_model=List[dict])
 async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)):
+    """Return the complete people directory for the dedicated admin console."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authorization header")
     user = await get_current_user(authorization)

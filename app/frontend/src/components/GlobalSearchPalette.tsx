@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { api } from "@/src/api/client";
+import { peopleApi } from "@/src/api/people";
 import { storage } from "@/src/utils/storage";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 import { RADIUS, SPACING } from "@/src/theme";
@@ -44,9 +45,12 @@ export default function GlobalSearchPalette({ visible, onClose }: { visible: boo
       setLoading(true);
       const local = localMatches(q);
       try {
-        const server = await api.globalSearch(q.trim());
+        const [serverResult, peopleResult] = await Promise.allSettled([api.globalSearch(q.trim()), peopleApi.search(q.trim())]);
+        const server = serverResult.status === "fulfilled" ? serverResult.value : EMPTY;
+        const directoryPeople = peopleResult.status === "fulfilled" ? peopleResult.value : [];
+        const people = [...(server.people || []), ...(directoryPeople || [])].filter((person: any, index: number, all: any[]) => person?.user_id && all.findIndex((candidate) => candidate.user_id === person.user_id) === index);
         const existing = new Set((server.locations || []).map((x: any) => x.id || x.name));
-        setResults({ ...server, locations: [...(server.locations || []), ...local.filter((x) => !existing.has(x.id) && !existing.has(x.name))] });
+        setResults({ ...server, people, locations: [...(server.locations || []), ...local.filter((x) => !existing.has(x.id) && !existing.has(x.name))] });
       } catch { setResults({ ...EMPTY, locations: local }); }
       finally { setLoading(false); }
     }, 170);

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { api } from "@/src/api/client";
+import { peopleApi } from "@/src/api/people";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 import { Alert } from "@/src/utils/alert";
@@ -25,7 +26,7 @@ export default function AdminScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const [peopleResult, statsResult, poolsResult] = await Promise.allSettled([api.adminPeople(), api.adminStats(), api.adminPools()]);
+    const [peopleResult, statsResult, poolsResult] = await Promise.allSettled([peopleApi.adminPeople(), peopleApi.adminStats(), peopleApi.adminPools()]);
     if (peopleResult.status === "fulfilled") setPeople(Array.isArray(peopleResult.value) ? peopleResult.value : []);
     if (statsResult.status === "fulfilled") setStats(statsResult.value);
     if (poolsResult.status === "fulfilled") setPools(poolsResult.value || []);
@@ -53,3 +54,4 @@ export default function AdminScreen() {
 }
 
 const makeStyles = (c: any) => StyleSheet.create({ safe: { flex: 1, backgroundColor: c.surface }, page: { width: "100%", maxWidth: 980, alignSelf: "center", padding: SPACING.lg, paddingBottom: 120 }, header: { flexDirection: "row", gap: 12, alignItems: "flex-start", marginBottom: 24 }, back: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.border, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }, eyebrow: { color: c.saffron, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 }, title: { color: c.onSurface, fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: "900", marginTop: 3 }, sub: { color: c.muted, fontSize: 12, lineHeight: 18, marginTop: 4 }, stats: { flexDirection: "row", gap: 10, marginBottom: 24 }, stat: { flex: 1, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: RADIUS.md, padding: 14 }, statValue: { color: c.onSurface, fontSize: 22, fontWeight: "900" }, statLabel: { color: c.muted, fontSize: 10, marginTop: 3 }, sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, sectionTitle: { color: c.onSurface, fontSize: 17, fontWeight: "900", marginTop: 3 }, search: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 52, paddingHorizontal: 13, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: RADIUS.md, marginBottom: 12 }, input: { flex: 1, minWidth: 0, color: c.onSurface, fontSize: 13, outlineStyle: "none" } as any, person: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: RADIUS.md, padding: 13, marginBottom: 8 }, avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface2, alignItems: "center", justifyContent: "center" }, avatarText: { color: c.indigo, fontWeight: "900", fontSize: 16 }, name: { color: c.onSurface, fontWeight: "900", fontSize: 13 }, meta: { color: c.muted, fontSize: 10, marginTop: 3 }, empty: { color: c.muted, textAlign: "center", padding: 35 }, errorCard: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: c.error, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, backgroundColor: c.card }, errorTitle: { color: c.onSurface, fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: "700" }, errorText: { color: c.muted, fontSize: 12, marginTop: 3, flexShrink: 1 }, retry: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: c.indigo }, retryText: { color: c.onPrimary, fontWeight: "700", fontSize: 12 }, center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 }, link: { color: c.indigo, fontWeight: "900" } });
+

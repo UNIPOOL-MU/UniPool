@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://uni-pool-ruddy.vercel.app">🌐 Live Product</a> ·
+  <a href="https://uni-pool-five.vercel.app">🌐 Live Product</a> ·
   <a href="https://github.com/um26/UniPool">📦 Project</a>
 </p>
 
@@ -397,7 +397,7 @@ The implementation uses a modern cross-platform frontend, API backend and cloud 
 # 🌐 Live Experience
 
 <p align="center">
-  <a href="https://uni-pool-ruddy.vercel.app">
+  <a href="https://uni-pool-five.vercel.app">
     <strong>🚀 Open UniPool</strong>
   </a>
 </p>

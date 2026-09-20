@@ -58,6 +58,65 @@ async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)
         raise HTTPException(status_code=500, detail="Could not load people")
 
 
+class RoleChange(BaseModel):
+    role: Literal["user", "moderator", "admin"]
+
+
+@router.get("/roles", response_model=List[dict])
+async def admin_roles(authorization: Optional[str] = Header(None)):
+    actor = await get_current_user(authorization)
+    if not actor:
+        raise HTTPException(status_code=401, detail="Sign in required")
+    if str(actor.get("email") or "").strip().lower() != "utkarsh7023340530@gmail.com":
+        raise HTTPException(status_code=403, detail="Only the platform owner can manage roles")
+    cursor = db.users.find(
+        {},
+        {"_id": 0, "user_id": 1, "email": 1, "name": 1, "username": 1,
+         "role": 1, "is_admin_override": 1, "created_at": 1},
+    ).sort("created_at", -1).limit(2000)
+    people = await cursor.to_list(2000)
+    for person in people:
+        if str(person.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com":
+            person["role"] = "owner"
+        elif person.get("is_admin_override") is True:
+            person["role"] = "admin"
+        else:
+            person["role"] = person.get("role") if person.get("role") in ("admin", "moderator") else "user"
+        person.pop("is_admin_override", None)
+    return people
+
+
+@router.patch("/people/{user_id}/role", response_model=dict)
+async def set_person_role(
+    user_id: str,
+    payload: RoleChange,
+    authorization: Optional[str] = Header(None),
+):
+    actor = await get_current_user(authorization)
+    if not actor:
+        raise HTTPException(status_code=401, detail="Sign in required")
+    if str(actor.get("email") or "").strip().lower() != "utkarsh7023340530@gmail.com":
+        raise HTTPException(status_code=403, detail="Only the platform owner can manage roles")
+    target = await db.users.find_one(
+        {"user_id": user_id}, {"_id": 0, "user_id": 1, "email": 1, "role": 1}
+    )
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_id == actor.get("user_id") or str(target.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com":
+        raise HTTPException(status_code=403, detail="Owner role cannot be changed")
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "role": payload.role,
+            "is_admin_override": payload.role == "admin",
+            "role_updated_at": datetime.now(timezone.utc),
+            "role_updated_by": actor["user_id"],
+        }},
+    )
+    logger.info("User role updated by %s for %s", actor["user_id"], user_id)
+    return {"ok": True, "user_id": user_id, "role": payload.role}
+
+
 @router.get("/stats", response_model=dict)
 async def admin_stats_endpoint(authorization: Optional[str] = Header(None)):
     """Get platform statistics (admin only)."""

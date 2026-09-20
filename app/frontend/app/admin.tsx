@@ -4,7 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { api } from "@/src/api/client";
-import { peopleApi } from "@/src/api/people";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 import { Alert } from "@/src/utils/alert";
@@ -30,7 +29,7 @@ export default function AdminScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const [peopleResult, statsResult, poolsResult, reportsResult] = await Promise.allSettled([isOwner ? api.adminRoles() : moderatorOnly ? Promise.resolve([]) : peopleApi.adminPeople(), moderatorOnly ? Promise.resolve(null) : peopleApi.adminStats(), api.adminPools(), api.adminReports()]);
+    const [peopleResult, statsResult, poolsResult, reportsResult] = await Promise.allSettled([isOwner ? api.adminRoles() : moderatorOnly ? Promise.resolve([]) : api.adminPeople(), moderatorOnly ? Promise.resolve(null) : api.adminStats(), api.adminPools(), api.adminReports()]);
     if (peopleResult.status === "fulfilled") setPeople(Array.isArray(peopleResult.value) ? peopleResult.value : []);
     if (statsResult.status === "fulfilled") setStats(statsResult.value);
     if (poolsResult.status === "fulfilled") setPools(poolsResult.value || []);

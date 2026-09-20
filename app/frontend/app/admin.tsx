@@ -15,9 +15,13 @@ export default function AdminScreen() {
   const { user } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const allowed = Boolean(user?.is_admin || user?.email?.toLowerCase() === "utkarsh7023340530@gmail.com");
+  const isOwner = user?.email?.toLowerCase() === "utkarsh7023340530@gmail.com";
+  const allowed = Boolean(user?.is_admin || user?.is_moderator || isOwner);
+  const moderatorOnly = Boolean(user?.is_moderator && !user?.is_admin && !isOwner);
   const [people, setPeople] = useState<any[]>([]);
   const [pools, setPools] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -26,18 +30,42 @@ export default function AdminScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const [peopleResult, statsResult, poolsResult] = await Promise.allSettled([peopleApi.adminPeople(), peopleApi.adminStats(), peopleApi.adminPools()]);
+    const [peopleResult, statsResult, poolsResult, reportsResult] = await Promise.allSettled([isOwner ? api.adminRoles() : moderatorOnly ? Promise.resolve([]) : peopleApi.adminPeople(), moderatorOnly ? Promise.resolve(null) : peopleApi.adminStats(), api.adminPools(), api.adminReports()]);
     if (peopleResult.status === "fulfilled") setPeople(Array.isArray(peopleResult.value) ? peopleResult.value : []);
     if (statsResult.status === "fulfilled") setStats(statsResult.value);
     if (poolsResult.status === "fulfilled") setPools(poolsResult.value || []);
-    const failures = [peopleResult, statsResult, poolsResult].filter((result): result is PromiseRejectedResult => result.status === "rejected").map((result) => {
+    if (reportsResult.status === "fulfilled") setReports(reportsResult.value || []);
+    const failures = [peopleResult, statsResult, poolsResult, reportsResult].filter((result): result is PromiseRejectedResult => result.status === "rejected").map((result) => {
       const reason = result.reason as any;
       return `${reason?.message || "Request failed"}${reason?.status ? ` (${reason.status})` : ""}`;
     });
     if (failures.length) setLoadError(failures.join(" · "));
     setLoading(false);
-  }, []);
+  }, [isOwner, moderatorOnly]);
   useEffect(() => { if (allowed) load(); else setLoading(false); }, [allowed, load]);
+
+  const assignRole = useCallback(async (person: any, role: "user" | "moderator" | "admin") => {
+    if (!isOwner || changingRole) return;
+    setChangingRole(person.user_id);
+    try {
+      await api.setMemberRole(person.user_id, role);
+      await load();
+      Alert.alert("Role updated", `${person.name || person.email || "Member"} is now ${role}.`);
+    } catch (e: any) {
+      Alert.alert("Could not change role", e?.message || "Please try again.");
+    } finally {
+      setChangingRole(null);
+    }
+  }, [isOwner, changingRole, load]);
+
+  const chooseRole = (person: any) => {
+    Alert.alert("Manage member role", `Choose access for ${person.name || person.email || "this member"}.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "User", onPress: () => assignRole(person, "user") },
+      { text: "Moderator", onPress: () => assignRole(person, "moderator") },
+      { text: "Admin", onPress: () => assignRole(person, "admin") },
+    ]);
+  };
 
   if (!allowed) return <SafeAreaView style={styles.safe}><View style={styles.center}><Ionicons name="lock-closed-outline" size={32} color={colors.error} /><Text style={styles.title}>Admin access required</Text><Pressable onPress={() => router.back()}><Text style={styles.link}>Go back</Text></Pressable></View></SafeAreaView>;
   const filtered = people.filter((p) => `${p.name || ""} ${p.email || ""} ${p.username || ""} ${p.branch_name || ""}`.toLowerCase().includes(query.toLowerCase()));

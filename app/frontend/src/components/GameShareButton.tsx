@@ -10,7 +10,7 @@ export default function GameShareButton({ game, result }: { game: string; result
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const recorded = useRef(false);
-  const url = "https://uni-pool-ruddy.vercel.app/games";
+  const url = "https://uni-pool-five.vercel.app/games";
   const text = `${result} on ${game} in UniPool Time-pass. Think you can beat me?`;
 
   useEffect(() => {

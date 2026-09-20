@@ -11,6 +11,7 @@ import GlobalSearchPalette from "@/src/components/GlobalSearchPalette";
 const NAV = [
   { label: "Home", icon: "home-outline" as const, path: "/(tabs)", match: "/" },
   { label: "Matches", icon: "people-outline" as const, path: "/(tabs)/matches", match: "/matches" },
+  { label: "My Trips", icon: "navigate-outline" as const, path: "/my-trips", match: "/my-trips" },
   { label: "Circles", icon: "wallet-outline" as const, path: "/circles", match: "/circles" },
   { label: "Chats", icon: "chatbubble-outline" as const, path: "/(tabs)/messages", match: "/messages" },
   { label: "Profile", icon: "person-outline" as const, path: "/(tabs)/profile", match: "/profile" },

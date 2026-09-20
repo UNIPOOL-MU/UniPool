@@ -12,6 +12,7 @@ sys.path.insert(0, str(backend_dir))
 
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
+from helpers.auth_helper import _with_admin_flag
 from typing import Literal
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -76,12 +77,7 @@ async def admin_roles(authorization: Optional[str] = Header(None)):
     ).sort("created_at", -1).limit(2000)
     people = await cursor.to_list(2000)
     for person in people:
-        if str(person.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com":
-            person["role"] = "owner"
-        elif person.get("is_admin_override") is True:
-            person["role"] = "admin"
-        else:
-            person["role"] = person.get("role") if person.get("role") in ("admin", "moderator") else "user"
+        person["role"] = _with_admin_flag(person)["role"]
         person.pop("is_admin_override", None)
     return people
 
@@ -98,12 +94,15 @@ async def set_person_role(
     if str(actor.get("email") or "").strip().lower() != "utkarsh7023340530@gmail.com":
         raise HTTPException(status_code=403, detail="Only the platform owner can manage roles")
     target = await db.users.find_one(
-        {"user_id": user_id}, {"_id": 0, "user_id": 1, "email": 1, "role": 1}
+        {"user_id": user_id}, {"_id": 0, "user_id": 1, "email": 1, "username": 1, "role": 1}
     )
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     if user_id == actor.get("user_id") or str(target.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com":
         raise HTTPException(status_code=403, detail="Owner role cannot be changed")
+    # Accounts granted admin by server configuration cannot be demoted in the UI.
+    if payload.role != "admin" and _with_admin_flag({**target, "role": "user", "is_admin_override": False})["is_admin"]:
+        raise HTTPException(status_code=409, detail="This account is managed by server admin configuration")
     await db.users.update_one(
         {"user_id": user_id},
         {"$set": {

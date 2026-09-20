@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_BASE = "https://unipool-backend-owb9.onrender.com";
-const HOME = "https://uni-pool-ruddy.vercel.app";
+const HOME = "https://uni-pool-five.vercel.app";
 const db = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 const CORS = {
   "Access-Control-Allow-Origin": "*",

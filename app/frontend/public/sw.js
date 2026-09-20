@@ -1,4 +1,4 @@
-const CACHE = "unipool-shell-v2.3.0";
+const CACHE = "unipool-shell-v2.4.0";
 const SHELL = [
   "/",
   "/campus",
@@ -6,6 +6,7 @@ const SHELL = [
   "/circles",
   "/circles/personal",
   "/notifications",
+  "/my-trips",
   "/safety",
   "/manifest.webmanifest",
   "/favicon.ico",

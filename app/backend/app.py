@@ -49,6 +49,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=False,
     allow_origins=[
+        "https://uni-pool-five.vercel.app",
         "https://uni-pool-ruddy.vercel.app",
         "https://uni-pool-um26s-projects-7a7e368d.vercel.app",
         "https://uni-pool-git-main-um26s-projects-7a7e368d.vercel.app",

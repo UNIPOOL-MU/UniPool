@@ -19,7 +19,7 @@ import UserBadges from "@/src/components/UserBadges";
 import PoolMapView from "@/src/components/PoolMapView";
 import ReportBlockModal from "@/src/components/ReportBlockModal";
 
-const WEB_BASE_URL = "https://uni-pool-ruddy.vercel.app";
+const WEB_BASE_URL = "https://uni-pool-five.vercel.app";
 const CANCEL_REASONS = ["Plans changed", "No longer travelling", "Timing changed", "Safety concern", "Other"];
 type ConfirmedTraveler = { user_id: string; name: string; email: string };
 type Pickup = { pickup_point_id: string; label: string; notes?: string | null; lat: number; lng: number };

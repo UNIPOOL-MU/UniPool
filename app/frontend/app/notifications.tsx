@@ -154,13 +154,15 @@ export default function NotificationsScreen() {
   const open = async (note: Note) => {
     if (!note.read_at) {
       setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: new Date().toISOString() } : n));
-      setUnread((n) => { const next = Math.max(0, n - 1); notificationInbox.setUnread(next); return next; });
+      setUnread((n) => Math.max(0, n - 1));
+      notificationInbox.setUnread(Math.max(0, unread - 1));
       try {
         if (note.source === "legacy") await api.readNotification(note.notification_id);
         else await peopleApi.readNotification(note.notification_id);
       } catch (e: any) {
         setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: note.read_at } : n));
-        setUnread((n) => { const next = n + 1; notificationInbox.setUnread(next); return next; });
+        setUnread((n) => n + 1);
+        notificationInbox.setUnread(unread);
         setError(e?.message || "Couldn't mark notification as read.");
       }
     }

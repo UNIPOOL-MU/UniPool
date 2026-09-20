@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import asyncio
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -26,8 +27,7 @@ def test_role_change_accepts_only_known_roles():
         admin_routes.RoleChange(role="owner")
 
 
-@pytest.mark.asyncio
-async def test_non_owner_cannot_change_roles(monkeypatch):
+def test_non_owner_cannot_change_roles(monkeypatch):
     monkeypatch.setattr(
         admin_routes, "get_current_user",
         AsyncMock(return_value={"user_id": "user_123", "email": "member@example.com"}),
@@ -35,15 +35,14 @@ async def test_non_owner_cannot_change_roles(monkeypatch):
     fake_users = SimpleNamespace(update_one=AsyncMock(), find_one=AsyncMock())
     monkeypatch.setattr(admin_routes, "db", SimpleNamespace(users=fake_users))
     with pytest.raises(HTTPException) as exc:
-        await admin_routes.set_person_role(
+        asyncio.run(admin_routes.set_person_role(
             "user_456", admin_routes.RoleChange(role="admin"), authorization="Bearer example"
-        )
+        ))
     assert exc.value.status_code == 403
     fake_users.update_one.assert_not_awaited()
 
 
-@pytest.mark.asyncio
-async def test_owner_cannot_demote_self(monkeypatch):
+def test_owner_cannot_demote_self(monkeypatch):
     monkeypatch.setattr(
         admin_routes, "get_current_user",
         AsyncMock(return_value={"user_id": "user_owner", "email": "utkarsh7023340530@gmail.com"}),
@@ -54,8 +53,8 @@ async def test_owner_cannot_demote_self(monkeypatch):
     )
     monkeypatch.setattr(admin_routes, "db", SimpleNamespace(users=fake_users))
     with pytest.raises(HTTPException) as exc:
-        await admin_routes.set_person_role(
+        asyncio.run(admin_routes.set_person_role(
             "user_owner", admin_routes.RoleChange(role="user"), authorization="Bearer example"
-        )
+        ))
     assert exc.value.status_code == 403
     fake_users.update_one.assert_not_awaited()

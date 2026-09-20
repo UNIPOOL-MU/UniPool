@@ -10,7 +10,7 @@ import { useTheme } from "@/src/theme_context/ThemeContext";
 import SocialShareSheet, { SharePayload } from "@/src/components/SocialShareSheet";
 
 type Convo = { kind: "direct" | "group"; other_user_id?: string; conversation_id?: string; name: string; last_message: string; unread: number; members_count?: number; last_at?: string };
-const HOME = "https://uni-pool-ruddy.vercel.app";
+const HOME = "https://uni-pool-five.vercel.app";
 const convoKey = (item: Convo) => item.kind === "group" ? `group-${item.conversation_id}` : `direct-${item.other_user_id}`;
 
 export default function FloatingChatLauncher() {

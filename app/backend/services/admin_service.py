@@ -28,6 +28,13 @@ async def require_admin(user: Dict[str, Any]) -> Dict[str, Any]:
         raise Exception("Admin access required")
     return user
 
+async def require_moderator(user: Dict[str, Any]) -> Dict[str, Any]:
+    """Verify that a user may moderate reports and travel queries."""
+    if not user.get("is_admin") and not user.get("is_moderator"):
+        raise Exception("Moderator access required")
+    return user
+
+
 async def get_admin_stats(user: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get platform statistics for admin dashboard.

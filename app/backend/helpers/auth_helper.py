@@ -32,14 +32,13 @@ def _verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-async def _create_session_token(user_id: str, *, verified_identity: bool = False) -> str:
+async def _create_session_token(user_id: str) -> str:
     session_token = uuid.uuid4().hex
     expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_EXPIRE_DAYS)
     await db.user_sessions.insert_one(
         {
             "session_token": session_token,
             "user_id": user_id,
-            "verified_identity": verified_identity,
             "expires_at": expires_at,
             "created_at": datetime.now(timezone.utc),
         }
@@ -83,13 +82,11 @@ async def _create_session_for_user(
             }
         )
 
-    session_token = await _create_session_token(user_id, verified_identity=True)
+    session_token = await _create_session_token(user_id)
     user_doc = await db.users.find_one(
         {"user_id": user_id}, {"_id": 0, "password_hash": 0}
     )
-    safe_user = _with_admin_flag(user_doc)
-    safe_user["can_manage_roles"] = safe_user["is_owner"]
-    return {"session_token": session_token, "user": safe_user}
+    return {"session_token": session_token, "user": _with_admin_flag(user_doc)}
 
 
 def _seed_admin_is_explicit() -> bool:
@@ -118,20 +115,12 @@ def _with_admin_flag(user_doc: dict) -> dict:
     )
 
     explicit_override = user.get("is_admin_override") is True and not is_default_seed_identity
-    is_owner = str(user.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com"
-    assigned_role = user.get("role")
     is_admin = (
         str(user.get("email") or "").lower() in ADMIN_EMAILS
         or configured_seed_admin
         or explicit_override
-        or assigned_role == "admin"
     )
     user["is_admin"] = is_admin
-    user["is_owner"] = is_owner
-    user["is_moderator"] = is_admin or assigned_role == "moderator"
-    user["role"] = "owner" if is_owner else "admin" if is_admin else "moderator" if assigned_role == "moderator" else "user"
-    # This is session-derived, never accepted from a browser or profile update.
-    user["can_manage_roles"] = False
     # Accounts created before the first-login tour existed do not have this
     # field. Treat them as not-yet-onboarded so they get the tour once rather
     # than silently skipping it forever.

@@ -57,7 +57,7 @@ export default function ProfileScreen() {
   const push = usePushNotifications();
   const { colors, isDark, mode, setMode } = useTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
-  const adminAccess = Boolean(user?.is_admin || user?.email?.toLowerCase() === "utkarsh7023340530@gmail.com");
+  const adminAccess = Boolean(user?.is_admin || user?.is_moderator || user?.email?.toLowerCase() === "utkarsh7023340530@gmail.com");
   const [myPools, setMyPools] = useState<Pool[]>([]);
   const [gender, setGender] = useState<string>(user?.gender || "any");
   const [tab, setTab] = useState<"open" | "closed">("open");
@@ -220,7 +220,7 @@ export default function ProfileScreen() {
                 </View>
               )}
               {adminAccess ? (
-                <View style={styles.adminBadge}><Ionicons name="shield-checkmark" size={12} color={colors.indigo} /><Text style={styles.adminBadgeText}>Admin</Text></View>
+                <View style={styles.adminBadge}><Ionicons name="shield-checkmark" size={12} color={colors.indigo} /><Text style={styles.adminBadgeText}>{user?.is_admin || user?.email?.toLowerCase() === "utkarsh7023340530@gmail.com" ? "Admin" : "Moderator"}</Text></View>
               ) : null}
             </LinearGradient>
 

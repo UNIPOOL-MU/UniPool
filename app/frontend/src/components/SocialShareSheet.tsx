@@ -22,7 +22,7 @@ export default function SocialShareSheet({ visible, onClose, payload }: { visibl
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const fullText = [payload.text, payload.url].filter(Boolean).join("\n");
   const encodedText = encodeURIComponent(fullText);
-  const encodedUrl = encodeURIComponent(payload.url || "https://uni-pool-ruddy.vercel.app");
+  const encodedUrl = encodeURIComponent(payload.url || "https://uni-pool-five.vercel.app");
 
   const open = async (url: string) => { try { await Linking.openURL(url); } catch (e: any) { Alert.alert("Couldn't open sharing app", e?.message || "Please try again."); } finally { onClose(); } };
   const instagram = async () => {

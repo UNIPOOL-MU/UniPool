@@ -72,7 +72,7 @@ async def list_admin_pools(user: Dict[str, Any]) -> List[Dict[str, Any]]:
         List of all pool dictionaries sorted by creation date (newest first)
     """
     # Verify admin access
-    await require_admin(user)
+    await require_moderator(user)
 
     # Fetch all pools
     cursor = db.pools.find(
@@ -93,7 +93,7 @@ async def admin_delete_pool(user: Dict[str, Any], pool_id: str) -> bool:
         True if pool was deleted, False otherwise
     """
     # Verify admin access
-    await require_admin(user)
+    await require_moderator(user)
 
     # Delete pool
     result = await db.pools.delete_one({"pool_id": pool_id})
@@ -179,7 +179,7 @@ async def list_admin_reports(user: Dict[str, Any]) -> List[Dict[str, Any]]:
         List of report dictionaries sorted by creation date (newest first)
     """
     # Verify admin access
-    await require_admin(user)
+    await require_moderator(user)
 
     # Fetch all reports
     cursor = db.reports.find(
@@ -200,7 +200,7 @@ async def admin_resolve_report(user: Dict[str, Any], report_id: str) -> bool:
         True if report was resolved, False otherwise
     """
     # Verify admin access
-    await require_admin(user)
+    await require_moderator(user)
 
     # Update report status
     result = await db.reports.update_one(

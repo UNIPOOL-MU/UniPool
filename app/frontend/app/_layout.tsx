@@ -70,6 +70,7 @@ function AuthGate() {
           <Stack.Screen name="post-request" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
           <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
+          <Stack.Screen name="my-trips" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="people" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="admin" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="campus" options={{ animation: "slide_from_right" }} />

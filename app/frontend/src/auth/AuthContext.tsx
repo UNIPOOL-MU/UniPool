@@ -16,6 +16,8 @@ export type UniUser = {
   blood_group?: string | null;
   username?: string | null;
   is_admin?: boolean;
+  is_moderator?: boolean;
+  role?: "owner" | "admin" | "moderator" | "user";
   college_verified?: boolean;
   college_email?: string | null;
   roll_number?: string | null;

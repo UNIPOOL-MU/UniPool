@@ -82,7 +82,7 @@ async def create_join_request(user: Dict[str, Any], pool_id: str) -> Dict[str, A
         if initial_status == "waitlisted":
             await send_push_notification(user["user_id"], "You're on the waitlist", f"{pool['from_location']} → {pool['to_location']} is full. We'll move you up automatically if a seat opens.", f"/pool/{pool_id}", "request", {"pool_id": pool_id, "request_id": request_doc["request_id"]})
         else:
-            await send_push_notification(pool["user_id"], "New ride request", f"{request_doc['requester_name']} wants to travel with you: {pool['from_location']} → {pool['to_location']}", "/(tabs)/profile", "request", {"pool_id": pool_id, "request_id": request_doc["request_id"]})
+            await send_push_notification(pool["user_id"], "New ride request", f"{request_doc['requester_name']} wants to travel with you: {pool['from_location']} → {pool['to_location']}", "/my-trips", "request", {"pool_id": pool_id, "request_id": request_doc["request_id"]})
             await send_email(pool["user_email"], "UniPool: New ride request", join_request_email_html(pool["user_name"], request_doc["requester_name"], pool, "received"))
     except Exception as e:
         logger.warning("Failed to send join request notifications: %s", e)
@@ -168,7 +168,7 @@ async def decline_request(request_id: str, user_id: str) -> Optional[Dict[str, A
         raise Exception("This request was already responded to")
     await db.join_requests.update_one({"request_id": request_id}, {"$set": {"status": "declined", "responded_at": _now_utc()}})
     try:
-        await send_push_notification(req_doc["requester_id"], "Ride request update", f"Your request for {req_doc['from_location']} → {req_doc['to_location']} wasn't accepted this time.", "/(tabs)/matches", "request", {"pool_id": req_doc["pool_id"], "request_id": request_id})
+        await send_push_notification(req_doc["requester_id"], "Ride request update", f"Your request for {req_doc['from_location']} → {req_doc['to_location']} wasn't accepted this time.", "/my-trips", "request", {"pool_id": req_doc["pool_id"], "request_id": request_id})
     except Exception:
         pass
     return await db.join_requests.find_one({"request_id": request_id}, {"_id": 0})

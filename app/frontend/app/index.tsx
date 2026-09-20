@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, interpolate } from "react-native-reanimated";
 
 import { useAuth } from "@/src/auth/AuthContext";
+import { api } from "@/src/api/client";
 import { utilityApi } from "@/src/api/utility";
 import { COLORS, SPACING, RADIUS, FONT_DISPLAY } from "@/src/theme";
 import BrandFooter from "@/src/components/BrandFooter";
@@ -108,6 +109,8 @@ export default function LoginScreen() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [checkingConnection, setCheckingConnection] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [legalAccepted, setLegalAccepted] = useState(false);
@@ -143,6 +146,18 @@ export default function LoginScreen() {
   };
 
   const go = (path: string) => router.push(path as any);
+
+  const retryConnection = async () => {
+    if (checkingConnection) return;
+    setCheckingConnection(true);
+    setConnectionMessage(null);
+    try {
+      await api.wakeBackend();
+      setConnectionMessage("Login server is reachable. Try signing in again.");
+    } catch {
+      setConnectionMessage("Still unable to reach the login server. Your connection or the API deployment may be blocking requests.");
+    } finally { setCheckingConnection(false); }
+  };
 
   const submitPasswordForm = async () => {
     setLocalError(null);
@@ -237,6 +252,8 @@ export default function LoginScreen() {
 
             {mode === "signup" ? <Pressable testID="signup-legal-consent" onPress={() => setLegalAccepted((v) => !v)} style={styles.consentRow}><View style={[styles.checkbox, legalAccepted && styles.checkboxOn]}>{legalAccepted ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}</View><Text style={styles.consentText}>I agree to the <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/terms" as any); }}>Terms & Conditions</Text> and <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/privacy" as any); }}>Privacy Policy</Text>.</Text></Pressable> : null}
             {(localError || signInError) ? <Text testID="password-auth-error" style={styles.errorText}>{localError || signInError}</Text> : null}
+            {signInError && /network|fetch|reach|server|connection|API/i.test(signInError) ? <Pressable testID="retry-login-connection" disabled={checkingConnection} onPress={retryConnection} style={{ paddingVertical: 8, alignSelf: "flex-start" }}><Text style={styles.fallbackLink}>{checkingConnection ? "Checking server…" : "Check connection & retry"}</Text></Pressable> : null}
+            {connectionMessage ? <Text style={styles.errorText}>{connectionMessage}</Text> : null}
             <Turnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
             <Pressable testID="password-auth-submit" onPress={submitPasswordForm} disabled={signingIn} style={[styles.authSubmit, signingIn && styles.disabled]}>
               {signingIn ? <ActivityIndicator color="#10214A" /> : <><Text style={styles.authSubmitText}>{mode === "signup" ? "Create account" : "Log in"}</Text><Ionicons name="arrow-forward" size={17} color="#10214A" /></>}

@@ -112,6 +112,7 @@ export default function ExploreScreen() {
   return <SafeAreaView style={styles.safe} edges={["top"]}>
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.headingRow}><View style={{ flex: 1 }}><Text style={styles.eyebrow}>EXPLORE</Text><Text style={styles.title}>Your mobility hub</Text><Text style={styles.subtitle}>Routes, recurring rides, travel history and useful tools. Each section stays usable even if another service is unavailable.</Text></View><Pressable onPress={() => go("/post-request")} style={styles.postButton}><Ionicons name="add" size={18} color="#fff" /><Text style={styles.postButtonText}>Post trip</Text></Pressable></View>
+      <Pressable onPress={() => go("/my-trips")} accessibilityLabel="Open My Trips" style={{ marginBottom: 14, padding: 14, borderRadius: RADIUS.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 10 }}><Ionicons name="albums-outline" size={19} color={colors.indigo} /><View style={{ flex: 1 }}><Text style={{ color: colors.onSurface, fontWeight: "900" }}>My Trips</Text><Text style={{ color: colors.muted, fontSize: 11 }}>Posted, requested and confirmed rides — with next actions.</Text></View><Ionicons name="chevron-forward" size={18} color={colors.indigo} /></Pressable>
 
       {loading && !loadedOnce.current ? <View style={styles.loadingCard}><ActivityIndicator color={colors.indigo} /><Text style={styles.muted}>Loading travel tools…</Text></View> : null}
 

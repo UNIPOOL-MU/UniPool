@@ -40,8 +40,9 @@ export default function MessageAlerts() {
     return () => { alive = false; clearInterval(timer); if (Platform.OS === "web") document.removeEventListener("visibilitychange", visible); };
   }, [user?.user_id, pathname]);
   if (!message) return null;
+  const notificationIsChat = message.route?.startsWith("/chat/");
   return <View style={{ position: "absolute", top: 72, left: 16, right: 16, maxWidth: 480, alignSelf: "center", backgroundColor: colors.card, borderColor: colors.indigo, borderWidth: 1, borderRadius: 16, padding: 14, zIndex: 1000, flexDirection: "row", gap: 12 }}>
-    <Pressable accessibilityLabel="Open new message" onPress={() => { const route = (message.metadata?.sender_id || message.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(message.metadata?.sender_id || message.metadata?.sender_user_id)}` : message.route?.startsWith("/chat/") ? message.route : "/messages"; router.push(route as any); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
+    <Pressable accessibilityLabel="Open new message" onPress={() => { const route = (message.metadata?.sender_id || message.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(message.metadata?.sender_id || message.metadata?.sender_user_id)}` : notificationIsChat ? message.route : "/messages"; router.push(route as any); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
     <Pressable accessibilityLabel="Dismiss message notification" onPress={() => setMessage(null)} style={{ minWidth: 44, minHeight: 44, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.indigo }}>✕</Text></Pressable>
   </View>;
 }

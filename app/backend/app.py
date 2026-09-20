@@ -57,7 +57,7 @@ app.add_middleware(
         "http://localhost:8081",
         "http://localhost:19006",
     ],
-    allow_origin_regex=r"https://uni-pool-[a-z0-9-]+-um26s-projects-7a7e368d\.vercel\.app",
+    allow_origin_regex=r"https://uni-pool-[a-z0-9-]+-(um26s-projects-7a7e368d|animesh11)\.vercel\.app",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )

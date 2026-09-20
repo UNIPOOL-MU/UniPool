@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Google sign-in failed", e);
       setSignInError(
         e?.message === "Failed to fetch" || e?.name === "TypeError"
-          ? "The UniPool server is still waking up. Please try once more in a few seconds."
+          ? "Could not reach UniPool\u2019s login server. Check your connection and retry; if it persists, the API may be unavailable or blocking this website."
           : e?.message || "Sign-in failed. Please try again."
       );
     } finally {

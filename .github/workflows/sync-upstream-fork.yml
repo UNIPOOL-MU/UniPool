@@ -1,0 +1,48 @@
+# This workflow is intentionally inert in um26/UniPool itself.
+# After a one-time "Sync fork", it runs in the hosting teammate's GitHub fork.
+# No PAT or Vercel credentials: GITHUB_TOKEN can push to its own fork.
+name: Sync hosting fork from UniPool
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upstream-sync-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository != 'um26/UniPool'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hosting fork main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Fast-forward fork without overwriting independent changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/um26/UniPool.git
+          git fetch --no-tags upstream main
+          source_sha="$(git rev-parse upstream/main)"
+          fork_sha="$(git rev-parse HEAD)"
+          if [ "$fork_sha" = "$source_sha" ]; then
+            echo "Hosting fork already matches um26/UniPool/main"
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor HEAD upstream/main; then
+            echo "::error::Fork main has independent commits. Sync manually and preserve your changes before automation resumes."
+            exit 1
+          fi
+          git merge --ff-only upstream/main
+          git push origin HEAD:main
+          echo "Hosting fork fast-forwarded to $source_sha"

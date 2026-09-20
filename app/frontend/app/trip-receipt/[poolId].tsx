@@ -20,7 +20,7 @@ type Pool = {
   companions: number; confirmed_travelers?: ConfirmedTraveler[];
 };
 
-const WEB_BASE_URL = "https://uni-pool-ruddy.vercel.app";
+const WEB_BASE_URL = "https://uni-pool-five.vercel.app";
 const TORN_DOTS = 16;
 
 function fmtDate(iso: string) {

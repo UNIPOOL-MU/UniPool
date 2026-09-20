@@ -4,6 +4,7 @@ import { answerLocalDailyChallenge, localDailyChallenge, localTriviaRound } from
 const BASE = process.env.EXPO_PUBLIC_API_BASE_URL;
 const TOKEN_KEY = "unipool.session_token";
 export const FRONTEND_VERSION = "2.2.0";
+export const FRONTEND_BUILD_SHA = process.env.EXPO_PUBLIC_BUILD_SHA || null;
 type CacheEntry = { at: number; data: any };
 let tokenMemory: string | null | undefined;
 let tokenLoad: Promise<string | null> | null = null;

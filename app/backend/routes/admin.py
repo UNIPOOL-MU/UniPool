@@ -53,7 +53,7 @@ async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)
     except HTTPException:
         raise
     except Exception as e:
-        if "Admin access required" in str(e): raise HTTPException(status_code=403, detail=str(e))
+        if "Admin access required" in str(e) or "Moderator access required" in str(e): raise HTTPException(status_code=403, detail=str(e))
         logger.warning("Admin people list failed: %s", e)
         raise HTTPException(status_code=500, detail="Could not load people")
 
@@ -134,7 +134,7 @@ async def admin_stats_endpoint(authorization: Optional[str] = Header(None)):
         raise
     except Exception as e:
         logger.warning(f"Admin stats failed: {e}")
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -156,7 +156,7 @@ async def admin_list_pools_endpoint(authorization: Optional[str] = Header(None))
         raise
     except Exception as e:
         logger.warning(f"Admin list pools failed: {e}")
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -184,7 +184,7 @@ async def admin_delete_pool_endpoint(
         logger.warning(f"Admin delete pool failed: {e}")
         if "Pool not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -204,7 +204,7 @@ async def admin_migrate_ratings_scale_endpoint(authorization: Optional[str] = He
         return BaseResponse(**result)
     except Exception as e:
         logger.warning(f"Admin migrate ratings scale failed: {e}")
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -224,7 +224,7 @@ async def admin_refresh_college_info_endpoint(authorization: Optional[str] = Hea
         return BaseResponse(**result)
     except Exception as e:
         logger.warning(f"Admin refresh college info failed: {e}")
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -244,7 +244,7 @@ async def admin_list_reports_endpoint(authorization: Optional[str] = Header(None
         return reports
     except Exception as e:
         logger.warning(f"Admin list reports failed: {e}")
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -272,7 +272,7 @@ async def admin_resolve_report_endpoint(
         logger.warning(f"Admin resolve report failed: {e}")
         if "Report not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
-        if "Admin access required" in str(e):
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -298,7 +298,7 @@ async def submit_game_score_endpoint(
         logger.warning(f"Submit game score failed: {e}")
         if "Unknown game" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
-        if "Admin access required" in str(e):  # This shouldn't happen for game scores
+        if "Admin access required" in str(e) or "Moderator access required" in str(e):  # This shouldn't happen for game scores
             raise HTTPException(status_code=403, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 

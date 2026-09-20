@@ -24,6 +24,7 @@ const patterns=routes.map(r=>new RegExp('^'+norm(r).replace(/\[\.\.\.[^\]]+\]/g,
 const routeTargets=targets.filter(t=>!t.file.startsWith('src/api/')&&/(router\.(push|replace)|pathname:|route:|path:|go\(|nav\()/s.test(fs.readFileSync(root+'/'+t.file,'utf8').split('\n')[t.line-1]||''));
 const missing=routeTargets.filter(t=>!t.value.includes('${')&&!patterns.some(p=>p.test(norm(t.value.split('?')[0]))));
 if(process.env.QA_INVENTORY_PATH)fs.writeFileSync(process.env.QA_INVENTORY_PATH,JSON.stringify({controls,routeTargets,routes,missing},null,2));
+if(missing.length) console.error('Unresolved navigation targets:',JSON.stringify(missing,null,2));
 assert.equal(missing.length,0,'Navigation targets must correspond to Expo routes');
 assert.equal(controls.filter(c=>!c.handler&&!c.spread).length,0,'Interactive controls need handlers');
 console.log(JSON.stringify({controls:controls.length,files:new Set(controls.map(c=>c.file)).size,missingHandlers:controls.filter(c=>!c.handler&&!c.spread),missingRoutes:missing},null,2));

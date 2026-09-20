@@ -3,6 +3,8 @@ import { Platform, Pressable, Text, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useAuth } from "@/src/auth/AuthContext";
 import { peopleApi, PeopleNotification } from "@/src/api/people";
+import { api } from "@/src/api/client";
+import { notificationDestination } from "@/src/notifications/routes";
 import { notificationInbox } from "@/src/notifications/inbox";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 
@@ -17,9 +19,9 @@ export default function MessageAlerts() {
     async function refresh() {
       if (busy) return; busy = true;
       try {
-        const items = await peopleApi.notifications(100);
+        const [items, travel] = await Promise.all([peopleApi.notifications(100), api.notifications(true, 100).catch(() => null)]);
         if (!alive) return;
-        notificationInbox.publish(items);
+        notificationInbox.publish(items, Number(travel?.unread || 0));
         const incoming = seen ? items.filter(item => (item.type === "message" || item.type === "chat") && !item.read_at && !seen!.has(item.id)) : [];
         seen = new Set(items.map(item => item.id));
         for (const item of incoming.reverse()) {
@@ -40,9 +42,9 @@ export default function MessageAlerts() {
     return () => { alive = false; clearInterval(timer); if (Platform.OS === "web") document.removeEventListener("visibilitychange", visible); };
   }, [user?.user_id, pathname]);
   if (!message) return null;
-  const notificationIsChat = message.route?.startsWith("/chat/");
+  const destination = notificationDestination(message);
   return <View style={{ position: "absolute", top: 72, left: 16, right: 16, maxWidth: 480, alignSelf: "center", backgroundColor: colors.card, borderColor: colors.indigo, borderWidth: 1, borderRadius: 16, padding: 14, zIndex: 1000, flexDirection: "row", gap: 12 }}>
-    <Pressable accessibilityLabel="Open new message" onPress={() => { const route = (message.metadata?.sender_id || message.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(message.metadata?.sender_id || message.metadata?.sender_user_id)}` : notificationIsChat ? message.route : "/messages"; router.push(route as any); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
+    <Pressable accessibilityLabel="Open new message" onPress={() => { router.push(destination as any); peopleApi.readNotification(message.id).catch(() => {}); setMessage(null); }} style={{ flex: 1, minWidth: 0 }}><Text style={{ color: colors.onSurface, fontWeight: "800" }}>{message.title}</Text><Text numberOfLines={2} style={{ color: colors.muted }}>{message.body}</Text></Pressable>
     <Pressable accessibilityLabel="Dismiss message notification" onPress={() => setMessage(null)} style={{ minWidth: 44, minHeight: 44, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.indigo }}>✕</Text></Pressable>
   </View>;
 }

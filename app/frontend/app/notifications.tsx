@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { api } from "@/src/api/client";
+import { notificationInbox } from "@/src/notifications/inbox";
+import { notificationDestination } from "@/src/notifications/routes";
 import { peopleApi } from "@/src/api/people";
 import { useTheme } from "@/src/theme_context/ThemeContext";
 import { FONT_DISPLAY, RADIUS, SPACING } from "@/src/theme";
@@ -14,6 +16,7 @@ type Note = {
   title: string;
   body: string;
   category?: string;
+  type?: string;
   action_url?: string;
   read_at?: string | null;
   created_at: string;
@@ -21,9 +24,10 @@ type Note = {
   metadata?: Record<string, any> | null;
 };
 
-type FilterKey = "all" | "trips" | "money" | "social" | "safety" | "games";
+type FilterKey = "all" | "action" | "trips" | "money" | "social" | "safety" | "games";
 const FILTERS: { key: FilterKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "all", label: "All", icon: "apps-outline" },
+  { key: "action", label: "Needs action", icon: "alert-circle-outline" },
   { key: "trips", label: "Trips", icon: "navigate-outline" },
   { key: "money", label: "Money", icon: "wallet-outline" },
   { key: "social", label: "Social", icon: "people-outline" },
@@ -61,9 +65,14 @@ function categoryFor(type?: string) {
   return value in ICONS ? value : "general";
 }
 
+function needsAction(note: Note) {
+  return !note.read_at && note.category === "request" && (/new ride request|wants to travel|join request/i.test(`${note.title || ""} ${note.body || ""}`) || note.action_url === "/my-trips");
+}
+
 function belongs(note: Note, filter: FilterKey) {
   const category = note.category || "general";
   if (filter === "all") return true;
+  if (filter === "action") return needsAction(note);
   if (filter === "trips") return ["trip", "match", "request", "saved_route", "rating"].includes(category);
   if (filter === "money") return category === "circle";
   if (filter === "social") return ["chat", "people"].includes(category);
@@ -101,31 +110,39 @@ export default function NotificationsScreen() {
     else setRefreshing(true);
     setError(null);
     try {
-      const rows = await peopleApi.notifications(80);
-      const normalized: Note[] = (rows || []).map((note) => ({
-        notification_id: note.id,
-        title: note.title,
-        body: note.body,
-        category: categoryFor(note.type),
-        action_url: note.route || undefined,
-        metadata: note.metadata || null,
-        read_at: note.read_at,
-        created_at: note.created_at,
-        source: "supabase",
-      }));
-      setItems(normalized);
-      setUnread(normalized.filter((note) => !note.read_at).length);
-      loaded.current = true;
-    } catch {
-      try {
-        const data = await api.notifications(false, 80);
-        const normalized: Note[] = (data.items || []).map((note: any) => ({ ...note, category: categoryFor(note.category), source: "legacy" }));
-        setItems(normalized);
-        setUnread(Number(data.unread || normalized.filter((note) => !note.read_at).length));
-        loaded.current = true;
-      } catch (e: any) {
-        setError(e?.message || "Couldn't refresh notifications.");
+      const [peopleResult, legacyResult] = await Promise.allSettled([
+        peopleApi.notifications(80), api.notifications(false, 80),
+      ]);
+      if (peopleResult.status === "rejected" && legacyResult.status === "rejected") {
+        throw peopleResult.reason || legacyResult.reason;
       }
+      const rows = peopleResult.status === "fulfilled" ? peopleResult.value : [];
+      const travel = legacyResult.status === "fulfilled" ? legacyResult.value : { items: [], unread: 0 };
+      const fromPeople: Note[] = (rows || []).map((note) => ({
+        notification_id: note.id, title: note.title, body: note.body,
+        category: categoryFor(note.type), type: note.type,
+        action_url: note.route || undefined, metadata: note.metadata || null,
+        read_at: note.read_at, created_at: note.created_at, source: "supabase",
+      }));
+      const fromTravel: Note[] = (travel.items || []).map((note: any) => ({
+        notification_id: note.notification_id,
+        title: note.title, body: note.body,
+        category: categoryFor(note.category), type: note.category,
+        action_url: note.action_url || undefined, metadata: note.data || note.metadata || null,
+        read_at: note.read_at, created_at: note.created_at, source: "legacy",
+      }));
+      const all = [...fromPeople, ...fromTravel].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setItems(all);
+      const count = all.filter((note) => !note.read_at).length;
+      setUnread(count);
+      notificationInbox.setUnread(count);
+      if (peopleResult.status === "rejected" || legacyResult.status === "rejected") {
+        setError("One notification service is unavailable; some updates may be missing.");
+      }
+      loaded.current = true;
+    } catch (e: any) {
+      setError(e?.message || "Couldn't refresh notifications.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -137,20 +154,17 @@ export default function NotificationsScreen() {
   const open = async (note: Note) => {
     if (!note.read_at) {
       setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: new Date().toISOString() } : n));
-      setUnread((n) => Math.max(0, n - 1));
+      setUnread((n) => { const next = Math.max(0, n - 1); notificationInbox.setUnread(next); return next; });
       try {
         if (note.source === "legacy") await api.readNotification(note.notification_id);
         else await peopleApi.readNotification(note.notification_id);
       } catch (e: any) {
         setItems((prev) => prev.map((n) => n.notification_id === note.notification_id ? { ...n, read_at: note.read_at } : n));
-        setUnread((n) => n + 1);
+        setUnread((n) => { const next = n + 1; notificationInbox.setUnread(next); return next; });
         setError(e?.message || "Couldn't mark notification as read.");
       }
     }
-    const messageRoute = note.category === "chat"
-      ? ((note.metadata?.sender_id || note.metadata?.sender_user_id) ? `/chat/${encodeURIComponent(note.metadata?.sender_id || note.metadata?.sender_user_id)}` : note.action_url?.startsWith("/chat/") ? note.action_url : "/messages")
-      : note.action_url;
-    if (messageRoute) router.push(messageRoute as any);
+    router.push(notificationDestination(note) as any);
   };
 
   const readAll = async () => {
@@ -160,15 +174,17 @@ export default function NotificationsScreen() {
     setMarkingAll(true);
     setItems((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
     setUnread(0);
+    notificationInbox.setUnread(0);
     try {
-      const usesLegacy = items.some((note) => note.source === "legacy");
-      if (usesLegacy) await api.readAllNotifications();
-      else await peopleApi.readAllNotifications();
-    } catch (e: any) { setItems(previous); setUnread(previousUnread); setError(e?.message || "Couldn't mark notifications as read."); }
+      await Promise.all([
+        items.some((note) => note.source === "legacy") ? api.readAllNotifications() : Promise.resolve(),
+        items.some((note) => note.source === "supabase") ? peopleApi.readAllNotifications() : Promise.resolve(),
+      ]);
+    } catch (e: any) { setItems(previous); setUnread(previousUnread); notificationInbox.setUnread(previousUnread); setError(e?.message || "Couldn't mark notifications as read."); }
     finally { setMarkingAll(false); }
   };
 
-  const visible = items.filter((note) => belongs(note, filter));
+  const visible = items.filter((note) => belongs(note, filter)).sort((a, b) => Number(needsAction(b)) - Number(needsAction(a)) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const filteredUnread = visible.filter((note) => !note.read_at).length;
 
   return <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -185,8 +201,9 @@ export default function NotificationsScreen() {
       {error ? <Pressable onPress={() => load(true)} style={styles.errorCard}><Ionicons name="refresh" size={19} color={colors.indigo} /><Text style={styles.errorText}>{error} Tap to retry.</Text></Pressable> : null}
       <View style={styles.summary}>
         <View><Text style={styles.summaryNum}>{filter === "all" ? unread : filteredUnread}</Text><Text style={styles.summaryLabel}>{filter === "all" ? "unread" : `unread ${filter}`}</Text></View>
-        <Text style={styles.summaryCopy}>Trips, Circle money, social updates, safety events and Time-pass now share one Supabase-first inbox.</Text>
+        <Text style={styles.summaryCopy}>Ride requests and trip updates from both notification services appear together.</Text>
       </View>
+      <Pressable onPress={() => router.push("/my-trips" as any)} style={[styles.note, { marginBottom: 12 }]}><Ionicons name="albums-outline" size={20} color={colors.indigo} /><View style={{ flex: 1 }}><Text style={styles.noteTitle}>My Trips</Text><Text style={styles.noteBody}>Review incoming ride requests and confirmed seats.</Text></View><Ionicons name="chevron-forward" size={18} color={colors.indigo} /></Pressable>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>{FILTERS.map((item) => <Pressable key={item.key} onPress={() => setFilter(item.key)} style={[styles.filter, filter === item.key && styles.filterActive]}><Ionicons name={item.icon} size={14} color={filter === item.key ? "#fff" : colors.indigo} /><Text style={[styles.filterText, filter === item.key && styles.filterTextActive]}>{item.label}</Text></Pressable>)}</ScrollView>
       {visible.length === 0 ? <View style={styles.empty}><Ionicons name="notifications-off-outline" size={32} color={colors.muted} /><Text style={styles.emptyTitle}>{items.length ? `No ${filter} updates` : "You're caught up"}</Text><Text style={styles.muted}>{items.length ? "Try another filter or check back after new UniPool activity." : "New UniPool activity will appear here."}</Text></View> : <View style={styles.stack}>
         {visible.map((note) => {

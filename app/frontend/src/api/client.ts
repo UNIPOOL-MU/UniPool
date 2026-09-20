@@ -10,7 +10,6 @@ let tokenLoad: Promise<string | null> | null = null;
 const responseCache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<any>>();
 let wakePromise: Promise<void> | null = null;
-let lastWakeAt = 0;
 
 export async function getToken(): Promise<string | null> {
   if (tokenMemory !== undefined) return tokenMemory;
@@ -66,8 +65,18 @@ async function req(path: string, opts: RequestInit = {}, cacheMs = 0) {
 }
 async function mutate(path: string, opts: RequestInit) { const data = await req(path, opts); clearReadCache(); return data; }
 async function wakeBackend() {
-  if (!BASE) return; if (wakePromise) return wakePromise; if (Date.now() - lastWakeAt < 30000) return; lastWakeAt = Date.now();
-  wakePromise = (async () => { const controller = typeof AbortController !== "undefined" ? new AbortController() : null; const timer = controller ? setTimeout(() => controller.abort(), 12000) : null; try { await fetch(BASE, { method: "GET", cache: "no-store", signal: controller?.signal }); } finally { if (timer) clearTimeout(timer); } })().finally(() => { wakePromise = null; });
+  if (!BASE) throw new Error("UniPool API is not configured");
+  if (wakePromise) return wakePromise;
+  wakePromise = (async () => {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 20000) : null;
+    try {
+      const response = await fetch(`${BASE}/health`, { method: "GET", cache: "no-store", signal: controller?.signal });
+      if (!response.ok) throw new Error(`UniPool API returned ${response.status}`);
+      const health = await response.json();
+      if (health?.status !== "ok") throw new Error("UniPool API or database is unavailable");
+    } finally { if (timer) clearTimeout(timer); }
+  })().finally(() => { wakePromise = null; });
   return wakePromise;
 }
 if (typeof document !== "undefined" && BASE) { try { const origin = new URL(BASE).origin; if (!document.querySelector(`link[data-unipool-preconnect="${origin}"]`)) { const link = document.createElement("link"); link.rel = "preconnect"; link.href = origin; link.setAttribute("data-unipool-preconnect", origin); document.head.appendChild(link); } } catch {} }

@@ -7,6 +7,7 @@ those concerns do not leak into mobility screens or ad-hoc collections.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 import uuid
@@ -304,6 +305,7 @@ async def release_diagnostics(frontend_version: Optional[str] = Query(default=No
     return {
         "status": "ok" if database == "ok" else "degraded",
         "backend_version": "2.2.0",
+        "backend_commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("GIT_COMMIT") or None,
         "frontend_version": frontend_version,
         "database_latency_ms": latency,
         "open_pools": await db.pools.count_documents({"status": "open"}),

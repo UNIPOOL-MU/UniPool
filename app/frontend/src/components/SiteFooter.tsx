@@ -8,7 +8,7 @@ import SocialShareSheet from "@/src/components/SocialShareSheet";
 const INSTAGRAM_HANDLE = "binary.bots_01";
 const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM_HANDLE}/`;
 const CONTACT_EMAIL = "binary.bots.0110@gmail.com";
-const HOME = "https://uni-pool-ruddy.vercel.app";
+const HOME = "https://uni-pool-five.vercel.app";
 
 export default function SiteFooter() {
   const { width } = useWindowDimensions();

@@ -111,6 +111,10 @@ export const api = {
   dailyChallengeLeaderboard: () => req("/daily-challenge/leaderboard", {}, 30000).catch(() => []),
   trivia: (excludeIds: string[] = [], count = 8) => Promise.resolve(localTriviaRound(excludeIds, count)),
 
+  adminRoles: () => req("/admin/roles", {}, 10000),
+  setMemberRole: (userId: string, role: "user" | "moderator" | "admin") => mutate(`/admin/people/${encodeURIComponent(userId)}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  adminReports: () => req("/admin/reports", {}, 10000),
+  adminResolveReport: (id: string) => mutate(`/admin/reports/${encodeURIComponent(id)}/resolve`, { method: "PATCH" }),
   adminStats: () => req("/admin/stats", {}, 10000), adminPools: () => req("/admin/pools", {}, 5000), adminPeople: () => req("/admin/people", {}, 5000), adminDeletePool: (id: string) => mutate(`/admin/pools/${id}`, { method: "DELETE" }),
   sendMessage: (to_user_id: string, text: string, pool_id?: string) => mutate("/messages", { method: "POST", body: JSON.stringify({ to_user_id, text, pool_id }) }), getThread: (otherUserId: string) => req(`/messages/${otherUserId}`, {}, 2500), listConversations: () => req("/messages/conversations", {}, 5000), sendTyping: (to_user_id: string) => req("/messages/typing", { method: "POST", body: JSON.stringify({ to_user_id }) }), getTyping: (otherUserId: string) => req(`/messages/typing/${otherUserId}`), getPresence: (userId: string) => req(`/users/${userId}/presence`, {}, 3000),
   getVapidKey: () => req("/push/vapid-public-key", {}, 60000), pushSubscribe: (sub: { endpoint: string; keys: any }) => mutate("/push/subscribe", { method: "POST", body: JSON.stringify(sub) }), pushUnsubscribe: (endpoint: string) => mutate("/push/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),

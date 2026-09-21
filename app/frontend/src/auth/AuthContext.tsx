@@ -472,10 +472,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSigningIn(true);
     setSignInError(null);
     try {
-      const res = await api.confirmEmailSignup(challengeId, code);
+      let res: any;
+      try {
+        res = await api.confirmEmailSignup(challengeId, code);
+      } catch (firstError: any) {
+        const networkFailure =
+          firstError?.message === "Failed to fetch" ||
+          firstError?.name === "TypeError" ||
+          /network|fetch|connection/i.test(firstError?.message || "");
+        if (!networkFailure) throw firstError;
+
+        // Render can transiently drop the first request while waking/restarting.
+        // Wake it explicitly, then retry the same OTP. The backend confirmation
+        // endpoint is idempotent, so a lost successful response is safe too.
+        await api.wakeBackend();
+        res = await api.confirmEmailSignup(challengeId, code);
+      }
       await applySession(res.session_token, { ...res.user, onboarding_completed: false, signup_tour_eligible: true });
     } catch (e: any) {
-      setSignInError(e?.message || "Couldn't verify that code. Please try again.");
+      setSignInError(
+        e?.message === "Failed to fetch" || e?.name === "TypeError"
+          ? "Could not reach UniPool's login server. Tap Verify again in a moment."
+          : e?.message || "Couldn't verify that code. Please try again."
+      );
       throw e;
     } finally {
       setSigningIn(false);

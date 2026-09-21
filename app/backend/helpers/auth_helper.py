@@ -70,7 +70,6 @@ async def _create_session_for_user(
             {
                 "user_id": user_id,
                 "email": email,
-                "username": None,
                 "name": name,
                 "picture": picture,
                 "gender": None,

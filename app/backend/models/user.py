@@ -89,6 +89,18 @@ class EmailSignupConfirm(BaseModel):
         return code
 
 
+class AccountDeleteRequest(BaseModel):
+    """Explicit confirmation required before permanently deleting an account."""
+    confirmation: str
+
+    @field_validator("confirmation")
+    @classmethod
+    def validate_confirmation(cls, value: str):
+        if value.strip().upper() != "DELETE":
+            raise ValueError('Type DELETE to confirm account deletion')
+        return "DELETE"
+
+
 class PasswordSetRequest(BaseModel):
     """Set or change the password for an authenticated account."""
     new_password: str = Field(min_length=8, max_length=128)

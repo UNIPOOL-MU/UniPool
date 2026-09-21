@@ -7,16 +7,18 @@ import logging
 from config.database import db
 from helpers.auth_helper import _hash_password, _verify_password
 from services.auth_service import (
-    signup_user, login_user, google_sign_in, microsoft_sign_in,
+    login_user, google_sign_in, microsoft_sign_in,
     microsoft_sign_in_config, complete_onboarding,
     logout_user, get_current_user, verify_turnstile,
 )
 from services.college_signup_service import start_college_signup, confirm_college_signup
+from services.email_signup_service import start_email_signup, confirm_email_signup
 from services.user_service import start_college_verification, confirm_college_verification
 from helpers.college_helper import sync_user_college_profile
 from models.auth import GoogleSignIn, MicrosoftSignIn
 from models.user import (
     SignupRequest,
+    EmailSignupConfirm,
     LoginRequest,
     PasswordSetRequest,
     CollegeVerifyStart,
@@ -47,15 +49,35 @@ async def _require_user(authorization: Optional[str]) -> dict:
 
 @router.post("/signup", response_model=dict)
 async def signup(body: SignupRequest, request: Request):
+    """Send a verification code before creating a regular email/password account."""
     try:
         if not await verify_turnstile(body.turnstile_token, request.client.host if request.client else None):
             raise HTTPException(status_code=400, detail="Bot check failed - please try again.")
-        return await _sync_result_user(await signup_user(body))
+        return await start_email_signup(body)
     except HTTPException:
         raise
-    except Exception as e:
-        logger.warning("Signup failed: %s", e)
+    except ValueError as e:
+        logger.info("Email signup start rejected: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        logger.warning("Email signup delivery unavailable: %s", e)
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        logger.exception("Unexpected email signup start failure")
+        raise HTTPException(status_code=500, detail="Could not start email signup")
+
+
+@router.post("/signup/confirm", response_model=dict)
+async def signup_confirm(body: EmailSignupConfirm):
+    """Create and sign in a regular account after its email OTP is correct."""
+    try:
+        return await _sync_result_user(await confirm_email_signup(body))
+    except ValueError as e:
+        logger.info("Email signup confirmation rejected: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Unexpected email signup confirmation failure")
+        raise HTTPException(status_code=500, detail="Could not complete email signup")
 
 
 @router.post("/signup/college/start", response_model=dict)

@@ -318,6 +318,109 @@ async def complete_onboarding(user_id: str) -> Dict[str, Any]:
     return _with_admin_flag(user_doc)
 
 
+async def delete_account(user_id: str) -> bool:
+    """Delete an account while preserving only anonymized IDs needed for shared-history integrity."""
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    if not user:
+        return False
+
+    now = datetime.now(timezone.utc)
+    original_email = str(user.get("email") or "").strip().lower()
+
+    # Remove private/per-user state and invalidate every session first.
+    private_collections = (
+        "user_sessions",
+        "notifications",
+        "notification_preferences",
+        "push_subscriptions",
+        "saved_routes",
+        "recurring_routes",
+        "pickup_points",
+        "daily_challenges",
+        "game_scores",
+        "personal_transactions",
+        "college_verifications",
+        "product_events",
+        "client_errors",
+    )
+    for collection_name in private_collections:
+        await db[collection_name].delete_many({"user_id": user_id})
+
+    await db.blocks.delete_many({"$or": [{"blocker_id": user_id}, {"blocked_id": user_id}]})
+    await db.ratings.delete_many({"rater_user_id": user_id})
+    await db.join_requests.delete_many({"requester_id": user_id})
+    await db.messages.delete_many({"$or": [{"from_user_id": user_id}, {"to_user_id": user_id}]})
+
+    # Remove owned trips and their request/chat state. For trips owned by other
+    # users, remove this account from the confirmed-traveller/member lists.
+    owned_pool_ids = [
+        row["pool_id"]
+        for row in await db.pools.find({"user_id": user_id}, {"_id": 0, "pool_id": 1}).to_list(5000)
+        if row.get("pool_id")
+    ]
+    if owned_pool_ids:
+        await db.join_requests.delete_many({"pool_id": {"$in": owned_pool_ids}})
+        await db.messages.delete_many({"pool_id": {"$in": owned_pool_ids}})
+        await db.conversations.delete_many({"last_pool_id": {"$in": owned_pool_ids}})
+        await db.pools.delete_many({"pool_id": {"$in": owned_pool_ids}})
+    await db.pools.update_many(
+        {"confirmed_travelers.user_id": user_id},
+        {"$pull": {"confirmed_travelers": {"user_id": user_id}}},
+    )
+    await db.conversations.update_many(
+        {"member_ids": user_id},
+        {"$pull": {"member_ids": user_id}, "$set": {"updated_at": now}},
+    )
+    await db.expense_groups.update_many(
+        {"$or": [{"member_ids": user_id}, {"admins": user_id}]},
+        {"$pull": {"member_ids": user_id, "admins": user_id}, "$set": {"updated_at": now}},
+    )
+
+    # Clear any pending signup challenges for the same mailbox.
+    if original_email:
+        await db.email_signup_challenges.delete_many({"email": original_email})
+        await db.college_signup_challenges.delete_many({"email": original_email})
+
+    # Keep the stable user_id as a tombstone so old shared accounting/safety
+    # references do not silently point at a future account. All login identity,
+    # profile PII and university identity are removed, and the original email /
+    # username become reusable immediately.
+    tombstone_email = f"deleted+{__import__('uuid').uuid4().hex}@deleted.unipool.local"
+    await db.users.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "email": tombstone_email,
+                "name": "Deleted user",
+                "password_hash": "",
+                "picture": None,
+                "gender": None,
+                "phone": None,
+                "blood_group": None,
+                "college_verified": False,
+                "onboarding_completed": True,
+                "account_deleted": True,
+                "deleted_at": now,
+                "role": "user",
+                "is_admin_override": False,
+            },
+            "$unset": {
+                "username": "",
+                "college_email": "",
+                "roll_number": "",
+                "school_name": "",
+                "degree_level_name": "",
+                "branch_name": "",
+                "program_name": "",
+                "batch_year": "",
+                "microsoft_oid": "",
+                "microsoft_tid": "",
+            },
+        },
+    )
+    return True
+
+
 async def logout_user(session_token: str) -> bool:
     result = await db.user_sessions.delete_one({"session_token": session_token})
     return result.deleted_count > 0

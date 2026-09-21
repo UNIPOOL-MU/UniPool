@@ -75,6 +75,20 @@ class SignupRequest(BaseModel):
         return username
 
 
+class EmailSignupConfirm(BaseModel):
+    """Finish a regular email signup after proving mailbox ownership."""
+    challenge_id: str = Field(min_length=1, max_length=128)
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, value: str):
+        code = value.strip()
+        if not re.fullmatch(r"\d{6}", code):
+            raise ValueError("Verification code must contain exactly 6 digits")
+        return code
+
+
 class PasswordSetRequest(BaseModel):
     """Set or change the password for an authenticated account."""
     new_password: str = Field(min_length=8, max_length=128)

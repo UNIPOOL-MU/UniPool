@@ -25,6 +25,7 @@ from services.admin_service import (
 )
 from models.auth import GameScoreSubmit
 from models.response import BaseResponse
+from services.auth_service import delete_account
 import logging
 
 logger = logging.getLogger("unipool.routes.admin")
@@ -50,7 +51,7 @@ async def admin_list_people_endpoint(authorization: Optional[str] = Header(None)
             "_id": 0, "password_hash": 0, "session_token": 0,
             "email_verification_token": 0, "reset_token": 0,
         }
-        return await db.users.find({}, projection).sort("created_at", -1).limit(1000).to_list(1000)
+        return await db.users.find({"account_deleted": {"$ne": True}}, projection).sort("created_at", -1).limit(1000).to_list(1000)
     except HTTPException:
         raise
     except Exception as e:
@@ -71,7 +72,7 @@ async def admin_roles(authorization: Optional[str] = Header(None)):
     if str(actor.get("email") or "").strip().lower() != "utkarsh7023340530@gmail.com":
         raise HTTPException(status_code=403, detail="Only the platform owner can manage roles")
     cursor = db.users.find(
-        {},
+        {"account_deleted": {"$ne": True}},
         {"_id": 0, "user_id": 1, "email": 1, "name": 1, "username": 1,
          "role": 1, "is_admin_override": 1, "created_at": 1},
     ).sort("created_at", -1).limit(2000)
@@ -114,6 +115,43 @@ async def set_person_role(
     )
     logger.info("User role updated by %s for %s", actor["user_id"], user_id)
     return {"ok": True, "user_id": user_id, "role": payload.role}
+
+
+@router.delete("/people/{user_id}", response_model=BaseResponse)
+async def admin_delete_person_endpoint(
+    user_id: str,
+    authorization: Optional[str] = Header(None),
+):
+    """Permanently delete a non-owner account (admin only)."""
+    actor = await get_current_user(authorization)
+    if not actor:
+        raise HTTPException(status_code=401, detail="Sign in required")
+    try:
+        await require_admin(actor)
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+    if user_id == actor.get("user_id"):
+        raise HTTPException(status_code=400, detail="Delete your own account from Settings")
+
+    target = await db.users.find_one(
+        {"user_id": user_id, "account_deleted": {"$ne": True}},
+        {"_id": 0, "user_id": 1, "email": 1, "name": 1},
+    )
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if str(target.get("email") or "").strip().lower() == "utkarsh7023340530@gmail.com":
+        raise HTTPException(status_code=403, detail="The platform owner account cannot be deleted by an admin")
+
+    deleted = await delete_account(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    logger.warning(
+        "Account deleted by admin actor=%s target=%s target_email=%s",
+        actor.get("user_id"), user_id, target.get("email"),
+    )
+    return BaseResponse()
 
 
 @router.get("/stats", response_model=dict)

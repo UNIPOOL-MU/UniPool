@@ -41,6 +41,7 @@ type AuthCtx = {
   signIn: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refresh: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   renderGoogleButton: (containerId: string) => void;
@@ -400,6 +401,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    setSigningIn(true);
+    setSignInError(null);
+    try {
+      await api.deleteAccount();
+      await Promise.all([setToken(null), cacheUser(null)]);
+      setUser(null);
+      if (Platform.OS === "web" && window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.disableAutoSelect();
+          window.google.accounts.id.cancel();
+        } catch {}
+      }
+    } catch (e: any) {
+      setSignInError(e?.message || "Couldn't delete your account. Please try again.");
+      throw e;
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
+
   const completeOnboarding = useCallback(async () => {
     if (!user) return;
     const optimistic = { ...user, onboarding_completed: true };
@@ -492,7 +514,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user, loading, signingIn, signInError,
       microsoftEnabled: Boolean(microsoftConfig?.enabled),
       microsoftConfigLoading,
-      clearSignInError, signIn, signInWithMicrosoft, signOut, refresh, completeOnboarding, renderGoogleButton,
+      clearSignInError, signIn, signInWithMicrosoft, signOut, deleteAccount, refresh, completeOnboarding, renderGoogleButton,
       signInWithPassword, signUpWithPassword, confirmEmailSignup, startCollegeSignup, confirmCollegeSignup,
     }}>
       {children}

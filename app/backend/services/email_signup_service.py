@@ -84,6 +84,22 @@ async def confirm_email_signup(body: EmailSignupConfirm) -> Dict[str, Any]:
     challenge = await db.email_signup_challenges.find_one({"challenge_id": body.challenge_id}, {"_id": 0})
     if not challenge:
         raise ValueError("No active signup verification was found. Please request a new code")
+
+    # A browser can lose the response after the account was successfully
+    # created (mobile networks / sleeping Render instances / transient CORS).
+    # Keep completed challenges briefly so retrying the same OTP is safe and
+    # returns a fresh session instead of stranding the user.
+    completed_user_id = challenge.get("completed_user_id")
+    if completed_user_id:
+        completed_user = await db.users.find_one(
+            {"user_id": completed_user_id, "account_deleted": {"$ne": True}},
+            {"_id": 0, "password_hash": 0},
+        )
+        if not completed_user:
+            raise ValueError("This signup was completed but the account is unavailable")
+        session_token = await _create_session_token(completed_user_id)
+        return {"session_token": session_token, "user": _with_admin_flag(completed_user)}
+
     if _aware(challenge["expires_at"]) < now:
         await db.email_signup_challenges.delete_one({"challenge_id": body.challenge_id})
         raise ValueError("Verification code expired. Please request a new code")
@@ -124,7 +140,20 @@ async def confirm_email_signup(body: EmailSignupConfirm) -> Dict[str, Any]:
         user_doc["username"] = username
 
     await db.users.insert_one(user_doc)
-    await db.email_signup_challenges.delete_one({"challenge_id": body.challenge_id})
+    # Mark the challenge completed instead of deleting it immediately. The TTL
+    # index still removes it automatically; this makes confirmation retries
+    # idempotent when the browser loses the first successful response.
+    await db.email_signup_challenges.update_one(
+        {"challenge_id": body.challenge_id},
+        {
+            "$set": {
+                "completed_user_id": user_id,
+                "completed_at": now,
+                "expires_at": now + timedelta(minutes=CHALLENGE_TTL_MINUTES),
+            },
+            "$unset": {"password_hash": "", "code_hash": ""},
+        },
+    )
     session_token = await _create_session_token(user_id)
     safe_user = {k: v for k, v in user_doc.items() if k != "password_hash"}
     return {"session_token": session_token, "user": _with_admin_flag(safe_user)}

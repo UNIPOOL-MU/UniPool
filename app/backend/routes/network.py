@@ -128,7 +128,7 @@ async def my_reliability(authorization: Optional[str] = Header(None)):
 @router.get("/users/{user_id}/profile")
 async def public_profile(user_id: str, authorization: Optional[str] = Header(None)):
     await _user(authorization)
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    user = await db.users.find_one({"user_id": user_id, "account_deleted": {"$ne": True}}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return _public_user(user)
@@ -147,7 +147,7 @@ async def mutual_context(other_user_id: str, authorization: Optional[str] = Head
     me = await _user(authorization)
     if other_user_id == me["user_id"]:
         return {"shared_trips": 0, "mutual_travellers": [], "academic": []}
-    other = await db.users.find_one({"user_id": other_user_id}, {"_id": 0})
+    other = await db.users.find_one({"user_id": other_user_id, "account_deleted": {"$ne": True}}, {"_id": 0})
     if not other:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -183,7 +183,7 @@ async def global_search(q: str = Query(min_length=2, max_length=80), authorizati
         {"_id": 0},
     ).sort("travel_datetime", 1).limit(8).to_list(8)
     users = await db.users.find(
-        {"user_id": {"$ne": me["user_id"]}, "$or": [{"name": pattern}, {"username": pattern}]},
+        {"user_id": {"$ne": me["user_id"]}, "account_deleted": {"$ne": True}, "$or": [{"name": pattern}, {"username": pattern}]},
         {"_id": 0, "user_id": 1, "name": 1, "username": 1, "picture": 1, "college_verified": 1, "school_name": 1, "batch_year": 1, "branch_name": 1, "program_name": 1},
     ).limit(8).to_list(8)
     conversations = await db.conversations.find(

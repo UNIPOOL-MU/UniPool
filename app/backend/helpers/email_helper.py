@@ -270,3 +270,18 @@ def college_verification_email_html(code: str, email: str) -> str:
       </table>
     </body></html>
     """
+
+def signup_verification_email_html(code: str, email: str) -> str:
+    """Generate the six-digit verification email for a normal UniPool signup."""
+    safe_email = (email or "").strip()
+    return f"""
+    <!doctype html>
+    <html><body style="font-family:Arial,sans-serif;background:#f6f8fb;padding:24px;color:#10214A">
+      <div style="max-width:560px;margin:auto;background:white;border-radius:16px;padding:28px">
+        <h2 style="margin-top:0">Verify your UniPool email</h2>
+        <p>Use this code to finish creating the account for <strong>{safe_email}</strong>.</p>
+        <div style="font-size:32px;font-weight:800;letter-spacing:8px;margin:24px 0">{code}</div>
+        <p>This code expires in 15 minutes. If you did not try to create a UniPool account, you can ignore this email.</p>
+      </div>
+    </body></html>
+    """

@@ -89,7 +89,7 @@ export const api = {
   emailSignup: (email: string, password: string, name: string, username?: string, turnstileToken?: string | null) => mutate("/auth/signup", { method: "POST", body: JSON.stringify({ email, password, name, username, turnstile_token: turnstileToken }) }),
   confirmEmailSignup: (challengeId: string, code: string) => mutate("/auth/signup/confirm", { method: "POST", body: JSON.stringify({ challenge_id: challengeId, code }) }),
   emailLogin: (identifier: string, password: string, turnstileToken?: string | null) => req("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password, turnstile_token: turnstileToken }) }),
-  me: () => req("/auth/me"), logout: () => mutate("/auth/logout", { method: "POST" }), updateProfile: (patch: any) => mutate("/profile", { method: "PATCH", body: JSON.stringify(patch) }),
+  me: () => req("/auth/me"), logout: () => mutate("/auth/logout", { method: "POST" }), deleteAccount: () => mutate("/auth/account", { method: "DELETE", body: JSON.stringify({ confirmation: "DELETE" }) }), updateProfile: (patch: any) => mutate("/profile", { method: "PATCH", body: JSON.stringify(patch) }),
 
   listPools: () => req("/pools", {}, 10000), routeHeatmap: () => req("/analytics/route-heatmap", {}, 30000), myPools: () => req("/pools/mine", {}, 10000), myMatches: () => req("/pools/matches", {}, 8000),
   createPool: (body: any) => mutate("/pools", { method: "POST", body: JSON.stringify(body) }), updatePool: (id: string, body: any) => mutate(`/pools/${id}`, { method: "PATCH", body: JSON.stringify(body) }),

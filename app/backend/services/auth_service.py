@@ -127,10 +127,9 @@ async def signup_user(body: SignupRequest) -> Dict[str, Any]:
             raise Exception("That username is already taken")
 
     user_id = f"user_{__import__('uuid').uuid4().hex[:12]}"
-    await db.users.insert_one({
+    user_doc = {
         "user_id": user_id,
         "email": email,
-        "username": username,
         "name": body.name.strip() or email.split("@")[0],
         "picture": None,
         "password_hash": _hash_password(body.password),
@@ -139,7 +138,10 @@ async def signup_user(body: SignupRequest) -> Dict[str, Any]:
         "onboarding_completed": False,
         "created_at": datetime.now(timezone.utc),
         "last_login": datetime.now(timezone.utc),
-    })
+    }
+    if username:
+        user_doc["username"] = username
+    await db.users.insert_one(user_doc)
 
     session_token = await _create_session_token(user_id)
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})

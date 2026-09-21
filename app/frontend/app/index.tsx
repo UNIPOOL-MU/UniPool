@@ -95,7 +95,7 @@ const JOURNEY_STEPS = [
 export default function LoginScreen() {
   const {
     user, loading, signingIn, signInError, clearSignInError, signIn, renderGoogleButton,
-    signInWithPassword, signUpWithPassword,
+    signInWithPassword, signUpWithPassword, confirmEmailSignup,
   } = useAuth();
   const router = useRouter();
   const scrollRef = useRef<any>(null);
@@ -114,6 +114,8 @@ export default function LoginScreen() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [legalAccepted, setLegalAccepted] = useState(false);
+  const [signupChallenge, setSignupChallenge] = useState<{ challenge_id: string; email: string } | null>(null);
+  const [signupCode, setSignupCode] = useState("");
   const [featuresOffset, setFeaturesOffset] = useState(0);
 
   useEffect(() => {
@@ -137,6 +139,8 @@ export default function LoginScreen() {
     setMode(next);
     setLocalError(null);
     clearSignInError();
+    setSignupChallenge(null);
+    setSignupCode("");
     if (next === "login") setLegalAccepted(false);
   };
 
@@ -162,6 +166,18 @@ export default function LoginScreen() {
   const submitPasswordForm = async () => {
     setLocalError(null);
     clearSignInError();
+
+    if (mode === "signup" && signupChallenge) {
+      if (!/^\d{6}$/.test(signupCode.trim())) return setLocalError("Enter the 6-digit code from your email.");
+      try {
+        await confirmEmailSignup(signupChallenge.challenge_id, signupCode.trim());
+        await utilityApi.recordPolicyConsent("email-signup").catch(() => {});
+      } catch {
+        // AuthContext exposes the server-safe error text.
+      }
+      return;
+    }
+
     if (!identifier.trim() || !password) return setLocalError("Please fill in all fields.");
     if (mode === "signup" && !name.trim()) return setLocalError("Please enter your name.");
     if (mode === "signup" && password.length < 8) return setLocalError("Use at least 8 characters for your password.");
@@ -171,8 +187,9 @@ export default function LoginScreen() {
       if (mode === "login") {
         await signInWithPassword(identifier.trim(), password, turnstileToken);
       } else {
-        await signUpWithPassword(identifier.trim(), password, name.trim(), undefined, turnstileToken);
-        await utilityApi.recordPolicyConsent("email-signup").catch(() => {});
+        const challenge = await signUpWithPassword(identifier.trim(), password, name.trim(), undefined, turnstileToken);
+        setSignupChallenge({ challenge_id: challenge.challenge_id, email: challenge.email });
+        setSignupCode("");
       }
     } catch {
       // AuthContext exposes the server-safe error text.
@@ -238,25 +255,30 @@ export default function LoginScreen() {
             <Pressable onPress={() => go("/settings")} style={styles.signedInSettings}><Ionicons name="settings-outline" size={16} color={AUTH_COLORS.blueStrong} /><Text style={styles.signedInSettingsText}>Account settings</Text></Pressable>
           </View> : <View style={[styles.authCard, !isWide && styles.authCardNarrow, isPhone && styles.authCardPhone]}>
             <Text style={styles.authEyebrow}>{mode === "signup" ? "JOIN UNIPOOL" : "WELCOME BACK"}</Text>
-            <Text style={styles.authHeading}>{mode === "signup" ? "Create your account" : "Log in to UniPool"}</Text>
-            <Text style={styles.authSubheading}>{mode === "signup" ? "Use any valid email address." : "Use your email or username and password."}</Text>
+            <Text style={styles.authHeading}>{mode === "signup" ? (signupChallenge ? "Check your email" : "Create your account") : "Log in to UniPool"}</Text>
+            <Text style={styles.authSubheading}>{mode === "signup" ? (signupChallenge ? `We sent a 6-digit code to ${signupChallenge.email}. Enter it below to finish signup.` : "Use any valid email address. We'll verify it before creating your account.") : "Use your email or username and password."}</Text>
 
             <View style={styles.segmentRow}>
               <Pressable testID="mode-signup" onPress={() => switchMode("signup")} style={[styles.segment, mode === "signup" && styles.segmentActive]}><Text style={[styles.segmentText, mode === "signup" && styles.segmentTextActive]}>Sign up</Text></Pressable>
               <Pressable testID="mode-login" onPress={() => switchMode("login")} style={[styles.segment, mode === "login" && styles.segmentActive]}><Text style={[styles.segmentText, mode === "login" && styles.segmentTextActive]}>Log in</Text></Pressable>
             </View>
 
-            {mode === "signup" && <TextInput testID="signup-name" value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor={AUTH_COLORS.muted} style={styles.input} autoCapitalize="words" />}
-            <TextInput testID="auth-identifier" value={identifier} onChangeText={(value) => { setIdentifier(value); setLocalError(null); clearSignInError(); }} placeholder={mode === "login" ? "Email or username" : "Email address"} placeholderTextColor={AUTH_COLORS.muted} style={styles.input} autoCapitalize="none" keyboardType={mode === "signup" ? "email-address" : "default"} />
-            <TextInput testID="auth-password" value={password} onChangeText={setPassword} placeholder={mode === "signup" ? "Password (8+ characters)" : "Password"} placeholderTextColor={AUTH_COLORS.muted} style={styles.input} secureTextEntry />
+            {mode === "signup" && signupChallenge ? <>
+              <TextInput testID="signup-verification-code" value={signupCode} onChangeText={(value) => { setSignupCode(value.replace(/\D/g, "").slice(0, 6)); setLocalError(null); clearSignInError(); }} placeholder="6-digit verification code" placeholderTextColor={AUTH_COLORS.muted} style={styles.input} keyboardType="number-pad" autoCapitalize="none" maxLength={6} />
+              <Pressable onPress={() => { setSignupChallenge(null); setSignupCode(""); clearSignInError(); setLocalError(null); }}><Text style={styles.fallbackLink}>Use a different email</Text></Pressable>
+            </> : <>
+              {mode === "signup" && <TextInput testID="signup-name" value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor={AUTH_COLORS.muted} style={styles.input} autoCapitalize="words" />}
+              <TextInput testID="auth-identifier" value={identifier} onChangeText={(value) => { setIdentifier(value); setLocalError(null); clearSignInError(); }} placeholder={mode === "login" ? "Email or username" : "Email address"} placeholderTextColor={AUTH_COLORS.muted} style={styles.input} autoCapitalize="none" keyboardType={mode === "signup" ? "email-address" : "default"} />
+              <TextInput testID="auth-password" value={password} onChangeText={setPassword} placeholder={mode === "signup" ? "Password (8+ characters)" : "Password"} placeholderTextColor={AUTH_COLORS.muted} style={styles.input} secureTextEntry />
+              {mode === "signup" ? <Pressable testID="signup-legal-consent" onPress={() => setLegalAccepted((v) => !v)} style={styles.consentRow}><View style={[styles.checkbox, legalAccepted && styles.checkboxOn]}>{legalAccepted ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}</View><Text style={styles.consentText}>I agree to the <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/terms" as any); }}>Terms & Conditions</Text> and <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/privacy" as any); }}>Privacy Policy</Text>.</Text></Pressable> : null}
+            </>}
 
-            {mode === "signup" ? <Pressable testID="signup-legal-consent" onPress={() => setLegalAccepted((v) => !v)} style={styles.consentRow}><View style={[styles.checkbox, legalAccepted && styles.checkboxOn]}>{legalAccepted ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}</View><Text style={styles.consentText}>I agree to the <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/terms" as any); }}>Terms & Conditions</Text> and <Text style={styles.inlineLink} onPress={(e) => { e.stopPropagation?.(); router.push("/privacy" as any); }}>Privacy Policy</Text>.</Text></Pressable> : null}
             {(localError || signInError) ? <Text testID="password-auth-error" style={styles.errorText}>{localError || signInError}</Text> : null}
             {signInError && /network|fetch|reach|server|connection|API/i.test(signInError) ? <Pressable testID="retry-login-connection" disabled={checkingConnection} onPress={retryConnection} style={{ paddingVertical: 8, alignSelf: "flex-start" }}><Text style={styles.fallbackLink}>{checkingConnection ? "Checking server…" : "Check connection & retry"}</Text></Pressable> : null}
             {connectionMessage ? <Text style={styles.errorText}>{connectionMessage}</Text> : null}
-            <Turnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
+            {!(mode === "signup" && signupChallenge) ? <Turnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} /> : null}
             <Pressable testID="password-auth-submit" onPress={submitPasswordForm} disabled={signingIn} style={[styles.authSubmit, signingIn && styles.disabled]}>
-              {signingIn ? <ActivityIndicator color="#10214A" /> : <><Text style={styles.authSubmitText}>{mode === "signup" ? "Create account" : "Log in"}</Text><Ionicons name="arrow-forward" size={17} color="#10214A" /></>}
+              {signingIn ? <ActivityIndicator color="#10214A" /> : <><Text style={styles.authSubmitText}>{mode === "signup" ? (signupChallenge ? "Verify & create account" : "Send verification code") : "Log in"}</Text><Ionicons name="arrow-forward" size={17} color="#10214A" /></>}
             </Pressable>
 
             <View style={styles.dividerRow}><View style={styles.dividerLine} /><Text style={styles.dividerText}>or Google</Text><View style={styles.dividerLine} /></View>
@@ -265,7 +287,7 @@ export default function LoginScreen() {
             </View> : <Pressable testID="google-signin-button" onPress={signIn} disabled={loading} style={({ pressed }) => [styles.googleBtn, pressed && { opacity: .85 }]}>
               {loading ? <ActivityIndicator color={AUTH_COLORS.blue} /> : <><View style={styles.gLogo}><Text style={{ fontWeight: "800", color: "#4285F4", fontSize: 18 }}>G</Text></View><Text style={styles.googleText}>Continue with Google</Text></>}
             </Pressable>}
-            <Text style={styles.googleLegal}>Google is optional. Regular email signup works with any valid email address.</Text>
+            <Text style={styles.googleLegal}>Google is optional. Email/password signup requires a one-time email verification code.</Text>
           </View>}
         </View>
 

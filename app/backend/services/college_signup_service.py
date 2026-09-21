@@ -157,7 +157,6 @@ async def confirm_college_signup(body: CollegeSignupConfirm) -> Dict[str, Any]:
         "user_id": user_id,
         "email": email,
         "college_email": email,
-        "username": username,
         "name": challenge["name"],
         "picture": None,
         "gender": None,
@@ -170,6 +169,8 @@ async def confirm_college_signup(body: CollegeSignupConfirm) -> Dict[str, Any]:
         "created_at": now,
         "last_login": now,
     }
+    if username:
+        user_doc["username"] = username
     await db.users.insert_one(user_doc)
     await db.college_signup_challenges.delete_one({"challenge_id": body.challenge_id})
 

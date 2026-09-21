@@ -87,6 +87,7 @@ export const api = {
   wakeBackend,
   googleSignIn: (id_token: string) => req("/auth/google", { method: "POST", body: JSON.stringify({ id_token }) }),
   emailSignup: (email: string, password: string, name: string, username?: string, turnstileToken?: string | null) => mutate("/auth/signup", { method: "POST", body: JSON.stringify({ email, password, name, username, turnstile_token: turnstileToken }) }),
+  confirmEmailSignup: (challengeId: string, code: string) => mutate("/auth/signup/confirm", { method: "POST", body: JSON.stringify({ challenge_id: challengeId, code }) }),
   emailLogin: (identifier: string, password: string, turnstileToken?: string | null) => req("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password, turnstile_token: turnstileToken }) }),
   me: () => req("/auth/me"), logout: () => mutate("/auth/logout", { method: "POST" }), updateProfile: (patch: any) => mutate("/profile", { method: "PATCH", body: JSON.stringify(patch) }),
 

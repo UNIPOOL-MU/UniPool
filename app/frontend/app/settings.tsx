@@ -20,7 +20,7 @@ const CATEGORY_LABELS: Record<string, { title: string; sub: string; icon: keyof 
 };
 
 export default function SettingsScreen() {
-  const router = useRouter(); const { user, signOut } = useAuth(); const push = usePushNotifications(); const { colors, mode, setMode } = useTheme(); const styles = useMemo(() => makeStyles(colors), [colors]);
+  const router = useRouter(); const { user, signOut, deleteAccount } = useAuth(); const push = usePushNotifications(); const { colors, mode, setMode } = useTheme(); const styles = useMemo(() => makeStyles(colors), [colors]);
   const [prefs, setPrefs] = useState<Prefs | null>(null); const [pickups, setPickups] = useState<Pickup[]>([]); const [blocked, setBlocked] = useState<any[]>([]); const [restricted, setRestricted] = useState<any[]>([]); const [blockedAvailable, setBlockedAvailable] = useState(true);
   const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [showPickup, setShowPickup] = useState(false); const [label, setLabel] = useState(""); const [lat, setLat] = useState(""); const [lng, setLng] = useState(""); const [notes, setNotes] = useState(""); const [diagnostics, setDiagnostics] = useState<any>(null);
 
@@ -41,6 +41,30 @@ export default function SettingsScreen() {
   const removePickup = async (id: string) => { const previous = pickups; setPickups((items) => items.filter((p) => p.pickup_point_id !== id)); try { await api.deletePickupPoint(id); } catch (e: any) { setPickups(previous); Alert.alert("Couldn't remove pickup point", e.message); } };
   const unblock = async (id: string) => { const previous = blocked; setBlocked((items) => items.filter((u) => u.user_id !== id)); try { await api.unblockUser(id); } catch (e: any) { setBlocked(previous); Alert.alert("Couldn't unblock user", e.message); } };
   const unrestrict = async (id: string) => { const previous = restricted; setRestricted((items) => items.filter((u) => u.user_id !== id)); try { await utilityApi.unrestrictUser(id); } catch (e: any) { setRestricted(previous); Alert.alert("Couldn't remove restriction", e.message); } };
+  const requestAccountDeletion = () => {
+    Alert.alert(
+      "Delete your UniPool account?",
+      "This signs you out everywhere, removes your profile and private account data, and removes your active trips. Shared safety/accounting history may keep an anonymized “Deleted user” reference so other users' records stay consistent. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: async () => {
+            setSaving(true);
+            try {
+              await deleteAccount();
+              router.replace("/" as any);
+            } catch (e: any) {
+              Alert.alert("Couldn't delete account", e?.message || "Please try again.");
+            } finally {
+              setSaving(false);
+            }
+          },
+        },
+      ],
+    );
+  };
   const nav = (path: string) => router.push(path as any);
 
   return <SafeAreaView style={styles.safe} edges={["top", "bottom"]}><View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><Ionicons name="chevron-back" size={21} color={colors.onSurface} /></Pressable><View style={{ flex: 1 }}><Text style={styles.eyebrow}>ACCOUNT</Text><Text style={styles.title}>Settings</Text></View><Text style={styles.version}>v{FRONTEND_VERSION}</Text></View>
@@ -59,7 +83,16 @@ export default function SettingsScreen() {
       <Section title="Legal & help" sub="Read the rules, privacy details and common answers at any time." styles={styles}><View style={styles.stack}><LinkRow icon="document-text-outline" title="Terms & Conditions" sub="Rules for travel, chats and shared money" onPress={() => nav("/terms")} styles={styles} colors={colors} /><LinkRow icon="shield-checkmark-outline" title="Privacy Policy" sub="What UniPool stores and why" onPress={() => nav("/privacy")} styles={styles} colors={colors} /><LinkRow icon="help-circle-outline" title="FAQs" sub="Answers about rides, Circles and accounts" onPress={() => nav("/faq")} styles={styles} colors={colors} /><LinkRow icon="people-circle-outline" title="Community Guidelines" sub="Safety, respect and accurate shared records" onPress={() => nav("/community-guidelines")} styles={styles} colors={colors} /></View></Section>
 
       {user?.is_admin ? <Section title="Release diagnostics" sub="Compare the deployed website with Render. These commit IDs are only known when each provider supplies them at build/deploy time." action="Refresh" onAction={load} styles={styles}>{diagnostics ? <><View style={styles.diagnostics}><Stat label="Frontend version" value={FRONTEND_VERSION} styles={styles} /><Stat label="Frontend commit" value={FRONTEND_BUILD_SHA?.slice(0, 12) || "Unavailable"} styles={styles} /><Stat label="Backend version" value={diagnostics.backend_version || "Unavailable"} styles={styles} /><Stat label="Render commit" value={diagnostics.backend_commit?.slice(0, 12) || "Unavailable"} styles={styles} /><Stat label="Database" value={diagnostics.status === "ok" ? "Connected" : "Degraded"} styles={styles} /><Stat label="DB latency" value={`${diagnostics.database_latency_ms ?? "—"} ms`} styles={styles} /><Stat label="Recent client errors" value={String(diagnostics.failed_client_events?.length || 0)} styles={styles} /></View><Text style={[styles.muted, { marginTop: 9 }]}>Different frontend/backend commits can be normal: each deploys separately. Check their commit IDs against GitHub if changes appear missing.</Text></> : <InlineNote icon="cloud-offline-outline" text="Backend diagnostics unavailable. Check the Render deployment and try Refresh." styles={styles} colors={colors} />}</Section> : null}
-      <Section title="Account" styles={styles}><Pressable onPress={signOut} style={styles.danger}><Ionicons name="log-out-outline" size={18} color={colors.error} /><Text style={styles.dangerText}>Sign out</Text></Pressable><Text style={[styles.muted, { marginTop: 10 }]}>UniPool does not sell personal data or expose message contents in product telemetry.</Text></Section>
+      <Section title="Account" sub="Manage your session or permanently remove your UniPool account." styles={styles}>
+        <View style={styles.stack}>
+          <Pressable onPress={signOut} style={styles.danger}><Ionicons name="log-out-outline" size={18} color={colors.error} /><Text style={styles.dangerText}>Sign out</Text></Pressable>
+          <Pressable testID="delete-account" disabled={saving} onPress={requestAccountDeletion} style={styles.deleteAccount}>
+            {saving ? <ActivityIndicator color={colors.error} /> : <Ionicons name="trash-outline" size={18} color={colors.error} />}
+            <View style={{ flex: 1 }}><Text style={styles.deleteAccountTitle}>Delete account</Text><Text style={styles.cardSub}>Permanently remove your login, profile and private account data.</Text></View>
+          </Pressable>
+        </View>
+        <Text style={[styles.muted, { marginTop: 10 }]}>Shared safety or accounting records may retain an anonymized Deleted user reference where needed for integrity.</Text>
+      </Section>
     </ScrollView>}
   </SafeAreaView>;
 }
@@ -76,5 +109,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
   segment: { flexDirection: "row", gap: 7, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, padding: 5 }, segmentBtn: { flex: 1, minHeight: 42, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6 }, segmentBtnActive: { backgroundColor: colors.indigo }, segmentText: { color: colors.muted, fontSize: 11, fontWeight: "900" },
   settingRow: { minHeight: 70, flexDirection: "row", alignItems: "center", gap: 10, padding: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, marginBottom: 8 }, smallIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.surface2, alignItems: "center", justifyContent: "center" }, categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, categoryCard: { flexGrow: 1, flexBasis: 190, minHeight: 112, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, padding: 12 }, categoryTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, cardTitle: { color: colors.onSurface, fontSize: 11, fontWeight: "900" }, cardSub: { color: colors.muted, fontSize: 9, lineHeight: 14, marginTop: 2 },
   formCard: { gap: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, padding: 12, marginBottom: 8 }, inputRow: { flexDirection: "row", gap: 8 }, input: { minHeight: 43, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface2, color: colors.onSurface, paddingHorizontal: 11 }, primary: { minHeight: 42, borderRadius: RADIUS.pill, backgroundColor: colors.indigo, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }, primaryText: { color: "#fff", fontSize: 10, fontWeight: "900" }, stack: { gap: 8 }, rowCard: { minHeight: 62, flexDirection: "row", alignItems: "center", gap: 10, padding: 11, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg }, note: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 9, padding: 11, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg },
-  diagnostics: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, stat: { flexGrow: 1, flexBasis: 150, minHeight: 72, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, padding: 12 }, statValue: { color: colors.onSurface, fontSize: 15, fontWeight: "900" }, statLabel: { color: colors.muted, fontSize: 9, marginTop: 3 }, danger: { minHeight: 44, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.error, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }, dangerText: { color: colors.error, fontWeight: "900", fontSize: 11 },
+  diagnostics: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, deleteAccount: { minHeight: 62, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.error, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 10, padding: 12 }, deleteAccountTitle: { color: colors.error, fontWeight: "900", fontSize: 11 }, stat: { flexGrow: 1, flexBasis: 150, minHeight: 72, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.lg, padding: 12 }, statValue: { color: colors.onSurface, fontSize: 15, fontWeight: "900" }, statLabel: { color: colors.muted, fontSize: 9, marginTop: 3 }, danger: { minHeight: 44, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.error, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }, dangerText: { color: colors.error, fontWeight: "900", fontSize: 11 },
 });

@@ -125,6 +125,13 @@ async def _mobility_maintenance_loop():
 async def startup_event():
     logger.info("Starting UniPool application...")
     try:
+        # Sparse unique indexes still index an explicitly stored null value.
+        # Older auth paths wrote username=None, so after the first such user
+        # every later password/OAuth signup could fail with E11000 username_1.
+        # Remove null/blank optional usernames before enforcing the index.
+        await db.users.update_many({"username": {"$type": "null"}}, {"$unset": {"username": ""}})
+        await db.users.update_many({"username": ""}, {"$unset": {"username": ""}})
+
         await db.users.create_index("email", unique=True)
         await db.users.create_index("user_id", unique=True)
         await db.users.create_index("username", unique=True, sparse=True)

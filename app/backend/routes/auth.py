@@ -7,7 +7,7 @@ import logging
 from config.database import db
 from helpers.auth_helper import _hash_password, _verify_password
 from services.auth_service import (
-    login_user, google_sign_in, microsoft_sign_in,
+    login_user, google_sign_in, microsoft_sign_in, delete_account,
     microsoft_sign_in_config, complete_onboarding,
     logout_user, get_current_user, verify_turnstile,
 )
@@ -19,6 +19,7 @@ from models.auth import GoogleSignIn, MicrosoftSignIn
 from models.user import (
     SignupRequest,
     EmailSignupConfirm,
+    AccountDeleteRequest,
     LoginRequest,
     PasswordSetRequest,
     CollegeVerifyStart,
@@ -216,6 +217,22 @@ async def get_current_user_info(authorization: Optional[str] = Header(None)):
     except Exception as e:
         logger.warning("Get current user failed: %s", e)
         raise HTTPException(status_code=401, detail=str(e))
+
+
+@router.delete("/account", response_model=BaseResponse)
+async def delete_account_route(body: AccountDeleteRequest, authorization: Optional[str] = Header(None)):
+    """Permanently remove the signed-in account and its private data."""
+    user = await _require_user(authorization)
+    try:
+        deleted = await delete_account(user["user_id"])
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Account not found")
+        return BaseResponse()
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Account deletion failed")
+        raise HTTPException(status_code=500, detail="Could not delete account right now")
 
 
 @router.post("/logout", response_model=BaseResponse)

@@ -45,7 +45,8 @@ type AuthCtx = {
   completeOnboarding: () => Promise<void>;
   renderGoogleButton: (containerId: string) => void;
   signInWithPassword: (identifier: string, password: string, turnstileToken?: string | null) => Promise<void>;
-  signUpWithPassword: (email: string, password: string, name: string, username?: string, turnstileToken?: string | null) => Promise<void>;
+  signUpWithPassword: (email: string, password: string, name: string, username?: string, turnstileToken?: string | null) => Promise<{ challenge_id: string; email: string; expires_in_seconds: number }>;
+  confirmEmailSignup: (challengeId: string, code: string) => Promise<void>;
   startCollegeSignup: (email: string, password: string, name: string, username?: string, turnstileToken?: string | null) => Promise<CollegeSignupChallenge>;
   confirmCollegeSignup: (challengeId: string, code: string) => Promise<void>;
 };
@@ -436,10 +437,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSigningIn(true);
     setSignInError(null);
     try {
-      const res = await api.emailSignup(email, password, name, username, turnstileToken);
+      return await api.emailSignup(email, password, name, username, turnstileToken);
+    } catch (e: any) {
+      setSignInError(e?.message || "Couldn't send your verification code. Please try again.");
+      throw e;
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
+
+  const confirmEmailSignup = useCallback(async (challengeId: string, code: string) => {
+    setSigningIn(true);
+    setSignInError(null);
+    try {
+      const res = await api.confirmEmailSignup(challengeId, code);
       await applySession(res.session_token, { ...res.user, onboarding_completed: false, signup_tour_eligible: true });
     } catch (e: any) {
-      setSignInError(e?.message || "Couldn't create your account. Please try again.");
+      setSignInError(e?.message || "Couldn't verify that code. Please try again.");
       throw e;
     } finally {
       setSigningIn(false);
@@ -479,7 +493,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       microsoftEnabled: Boolean(microsoftConfig?.enabled),
       microsoftConfigLoading,
       clearSignInError, signIn, signInWithMicrosoft, signOut, refresh, completeOnboarding, renderGoogleButton,
-      signInWithPassword, signUpWithPassword, startCollegeSignup, confirmCollegeSignup,
+      signInWithPassword, signUpWithPassword, confirmEmailSignup, startCollegeSignup, confirmCollegeSignup,
     }}>
       {children}
     </Ctx.Provider>

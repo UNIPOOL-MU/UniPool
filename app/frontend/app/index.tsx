@@ -172,8 +172,27 @@ export default function LoginScreen() {
       try {
         await confirmEmailSignup(signupChallenge.challenge_id, signupCode.trim());
         await utilityApi.recordPolicyConsent("email-signup").catch(() => {});
-      } catch {
-        // AuthContext exposes the server-safe error text.
+      } catch (e: any) {
+        const networkFailure =
+          e?.message === "Failed to fetch" ||
+          e?.name === "TypeError" ||
+          /network|fetch|connection/i.test(e?.message || "");
+
+        if (networkFailure) {
+          // The backend can successfully create the account while the browser
+          // loses the confirmation response. In that case, immediately try a
+          // normal password login with the same credentials. A successful
+          // fallback clears the misleading network error and signs the user in.
+          try {
+            await signInWithPassword(identifier.trim(), password);
+            await utilityApi.recordPolicyConsent("email-signup").catch(() => {});
+            clearSignInError();
+            setLocalError(null);
+          } catch {
+            // If the account genuinely was not created, AuthContext keeps the
+            // safe login error visible so the user can retry.
+          }
+        }
       }
       return;
     }
